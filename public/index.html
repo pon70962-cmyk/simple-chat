@@ -45,6 +45,9 @@
     .btn-img { background: #2a2a2a; color: #aaa; font-size: 18px; padding: 10px 14px; }
     .btn-img:hover { background: #3a3a3a; }
 
+    canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.25; }
+    .header, .chat-container, .input-area { position: relative; z-index: 1; }
+
     .auth-screen { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 1000; }
     .auth-box { background: #1a1a2e; padding: 40px; border-radius: 16px; text-align: center; border: 1px solid #ff2d55; max-width: 360px; width: 90%; }
     .auth-box h2 { margin-bottom: 8px; background: linear-gradient(45deg, #ff2d55, #ff6b6b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -61,6 +64,8 @@
   </style>
 </head>
 <body>
+  <canvas id="fly-canvas"></canvas>
+
   <div class="auth-screen" id="auth-screen">
     <div class="auth-box">
       <h2>NSFW Chat</h2>
@@ -207,6 +212,96 @@
       d.textContent = text;
       return d.innerHTML;
     }
+
+    const canvas = document.getElementById('fly-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const dongs = [];
+
+    function createDong() {
+      return {
+        x: Math.random() * canvas.width,
+        y: canvas.height + 60,
+        w: 18 + Math.random() * 20,
+        h: 50 + Math.random() * 60,
+        speed: 0.3 + Math.random() * 0.8,
+        swing: Math.random() * Math.PI * 2,
+        swingSpeed: 0.02 + Math.random() * 0.03,
+        color: `hsla(${Math.random() * 30 + 340}, 70%, ${50 + Math.random() * 30}%, 0.7)`,
+        tilt: (Math.random() - 0.5) * 0.6,
+        left: Math.random() > 0.5
+      };
+    }
+
+    for (let i = 0; i < 14; i++) {
+      const d = createDong();
+      d.y = Math.random() * canvas.height;
+      dongs.push(d);
+    }
+
+    function drawDong(d) {
+      ctx.save();
+      ctx.translate(d.x, d.y);
+      ctx.rotate(d.tilt + Math.sin(d.swing) * 0.2);
+
+      if (d.left) ctx.scale(-1, 1);
+
+      ctx.fillStyle = d.color;
+      ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      ctx.moveTo(-d.w/3, -d.h);
+      ctx.quadraticCurveTo(d.w/2, -d.h, d.w/3, -d.h * 0.6);
+      ctx.quadraticCurveTo(d.w/2, -d.h * 0.4, d.w/3, -d.h * 0.3);
+      ctx.quadraticCurveTo(d.w/2, -d.h * 0.1, d.w/3, 0);
+      ctx.lineTo(-d.w/3, 0);
+      ctx.quadraticCurveTo(-d.w/2, -d.h * 0.1, -d.w/3, -d.h * 0.3);
+      ctx.quadraticCurveTo(-d.w/2, -d.h * 0.4, -d.w/3, -d.h * 0.6);
+      ctx.quadraticCurveTo(-d.w/2, -d.h, -d.w/3, -d.h);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(0, -d.h, d.w/4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(255,255,255,0.15)';
+      ctx.beginPath();
+      ctx.ellipse(-d.w/6, -d.h * 0.5, d.w/8, d.h/6, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      dongs.forEach(d => {
+        d.y -= d.speed;
+        d.swing += d.swingSpeed;
+
+        if (d.y < -120) {
+          Object.assign(d, createDong());
+          d.y = canvas.height + 60;
+        }
+
+        drawDong(d);
+      });
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
   </script>
 </body>
 </html>
