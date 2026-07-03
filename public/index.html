@@ -101,6 +101,48 @@
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+    @media (max-width: 768px) {
+      .sidebar { width: 60px; }
+      .sidebar .room-item span { display: none; }
+      .sidebar .room-item { justify-content: center; padding: 12px 8px; font-size: 18px; }
+      .sidebar .nsfw-badge { display: none; }
+      .sidebar-title { display: none; }
+      .header h1 { font-size: 15px; }
+      .header .users-online { font-size: 11px; }
+      .btn-call { padding: 6px 10px; font-size: 11px; }
+      .room-badge { font-size: 10px; padding: 3px 8px; }
+      .message { max-width: 90%; padding: 8px 12px; }
+      .msg-text { font-size: 13px; }
+      .videos-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
+      #messages { padding: 10px 12px; }
+      .input-area { padding: 8px 10px; }
+      #input { padding: 10px 12px; font-size: 14px; }
+      .btn { padding: 10px 14px; font-size: 13px; }
+      .btn-img { font-size: 16px; padding: 10px 12px; }
+      .call-notification { top: 10px; left: 10px; right: 10px; transform: none; padding: 12px 16px; font-size: 13px; flex-wrap: wrap; gap: 10px; }
+      .auth-box { padding: 30px 20px; }
+      .header { padding: 10px 12px; }
+      .header-right { gap: 6px; }
+      canvas { opacity: 0.1; }
+      .milk-layer { opacity: 0.6; }
+    }
+
+    @media (max-width: 480px) {
+      .sidebar { width: 44px; }
+      .sidebar .room-item { padding: 10px 4px; font-size: 14px; }
+      #messages { padding: 8px; }
+      .message { max-width: 95%; font-size: 12px; }
+      .msg-text { font-size: 12px; }
+      .msg-user { font-size: 10px; }
+      .videos-grid { grid-template-columns: repeat(2, 1fr); gap: 4px; }
+      .btn-call { padding: 5px 8px; font-size: 10px; }
+      .header h1 { font-size: 13px; }
+      .header .users-online { display: none; }
+      .call-notification { font-size: 12px; padding: 10px 12px; }
+      .auth-box h2 { font-size: 18px; }
+      .auth-box p { font-size: 12px; }
+    }
   </style>
 </head>
 <body>
