@@ -214,8 +214,49 @@
     });
 
     let holdTimer = null;
+    let msgCounter = 0;
 
-    function cumshot(el) {
+    function playCumSound() {
+      try {
+        const actx = new (window.AudioContext || window.webkitAudioContext)();
+        const dur = 0.6;
+
+        const osc = actx.createOscillator();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(200, actx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(60, actx.currentTime + dur * 0.3);
+
+        const noise = actx.createBufferSource();
+        const buf = actx.createBuffer(1, actx.sampleRate * dur, actx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (actx.sampleRate * 0.08));
+        }
+        noise.buffer = buf;
+
+        const gain = actx.createGain();
+        gain.gain.setValueAtTime(0.3, actx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + dur);
+
+        const filter = actx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(3000, actx.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(200, actx.currentTime + dur);
+
+        osc.connect(gain);
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(actx.destination);
+
+        osc.start();
+        noise.start();
+        osc.stop(actx.currentTime + dur);
+        noise.stop(actx.currentTime + dur);
+      } catch(e) {}
+    }
+
+    function cumshot(el, msgId) {
+      playCumSound();
       const rect = el.getBoundingClientRect();
       const container = document.createElement('div');
       container.style.cssText = 'position:fixed;inset:0;z-index:999;pointer-events:none;overflow:hidden';
@@ -267,12 +308,22 @@
 
     function renderMessage(msg) {
       const item = document.createElement('div');
+      const myMsgId = msgCounter++;
+      item.dataset.msgid = myMsgId;
       item.addEventListener('mousedown', () => {
-        holdTimer = setTimeout(() => { cumshot(item); }, 500);
+        holdTimer = setTimeout(() => {
+          cumshot(item, myMsgId);
+          socket.emit('cumshot', { msgId: myMsgId });
+        }, 500);
       });
       item.addEventListener('mouseup', () => { clearTimeout(holdTimer); });
       item.addEventListener('mouseleave', () => { clearTimeout(holdTimer); });
-      item.addEventListener('touchstart', (e) => { holdTimer = setTimeout(() => { cumshot(item); }, 500); });
+      item.addEventListener('touchstart', (e) => {
+        holdTimer = setTimeout(() => {
+          cumshot(item, myMsgId);
+          socket.emit('cumshot', { msgId: myMsgId });
+        }, 500);
+      });
       item.addEventListener('touchend', (e) => { clearTimeout(holdTimer); });
       item.addEventListener('touchmove', (e) => { clearTimeout(holdTimer); });
       if (msg.type === 'system') {
@@ -292,6 +343,11 @@
 
     socket.on('message', (msg) => {
       renderMessage(msg);
+    });
+
+    socket.on('cumshot', (data) => {
+      const target = document.querySelector(`[data-msgid="${data.msgId}"]`);
+      if (target) cumshot(target, data.msgId);
     });
 
     socket.on('users-count', (count) => {

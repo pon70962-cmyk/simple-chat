@@ -36,6 +36,10 @@ io.on('connection', (socket) => {
     updateUsersCount();
   });
 
+  socket.on('cumshot', (data) => {
+    io.to(room).emit('cumshot', { username, msgId: data.msgId });
+  });
+
   socket.on('sendMessage', (data) => {
     const msg = {
       user: username,
