@@ -11,6 +11,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const roomUsers = {};
 const roomHistory = {};
+const userSockets = {};
 
 io.on('connection', (socket) => {
   let username = 'Аноним';
@@ -25,6 +26,7 @@ io.on('connection', (socket) => {
     socket.join(room);
     if (!roomUsers[room]) roomUsers[room] = new Set();
     roomUsers[room].add(socket.id);
+    userSockets[username] = socket.id;
     updateUsersCount();
     socket.emit('chat-history', roomHistory[room] || []);
     socket.to(room).emit('message', { type: 'system', text: `${username} присоединился к ${room}` });
@@ -38,6 +40,22 @@ io.on('connection', (socket) => {
 
   socket.on('cumshot', (data) => {
     io.to(room).emit('cumshot', { username, msgId: data.msgId });
+  });
+
+  socket.on('call-start', () => {
+    io.to(room).emit('call-started', { username, fromId: socket.id });
+  });
+
+  socket.on('call-end', () => {
+    io.to(room).emit('call-ended', { username });
+  });
+
+  socket.on('call-join', (data) => {
+    io.to(room).emit('call-joined', { username, targetId: socket.id, callerId: data.callerId });
+  });
+
+  socket.on('call-signal', (data) => {
+    socket.to(data.to).emit('call-signal', { signal: data.signal, from: socket.id, fromUser: username });
   });
 
   socket.on('sendMessage', (data) => {
@@ -56,8 +74,10 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     if (roomUsers[room]) roomUsers[room].delete(socket.id);
+    delete userSockets[username];
     updateUsersCount();
     io.to(room).emit('message', { type: 'system', text: `${username} покинул чат` });
+    io.to(room).emit('call-ended', { username });
   });
 
   function updateUsersCount() {

@@ -67,6 +67,20 @@
     canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.2; }
     .header, .chat-container, .input-area { position: relative; z-index: 1; }
 
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .btn-call { padding: 8px 16px; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 700; transition: 0.2s; }
+    .btn-call.idle { background: #2a2a2a; color: #aaa; }
+    .btn-call.idle:hover { background: #3a3a3a; color: #fff; }
+    .btn-call.active { background: #ff2d55; color: #fff; animation: pulse 1.5s infinite; }
+    .btn-call.joined { background: #25d366; color: #fff; }
+
+    @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,45,85,0.5); } 50% { box-shadow: 0 0 0 10px rgba(255,45,85,0); } }
+
+    .call-notification { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #1a1a2e; border: 1px solid #ff2d55; border-radius: 12px; padding: 16px 24px; z-index: 1001; display: flex; align-items: center; gap: 16px; box-shadow: 0 4px 30px rgba(0,0,0,0.5); }
+    .call-notification .btn { padding: 8px 20px; }
+    .btn-join { background: #25d366; color: #fff; }
+    .btn-decline { background: #555; color: #fff; }
+
     .auth-screen { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 1000; }
     .auth-box { background: #1a1a2e; padding: 40px; border-radius: 16px; text-align: center; border: 1px solid #ff2d55; max-width: 360px; width: 90%; }
     .auth-box h2 { margin-bottom: 8px; background: linear-gradient(45deg, #ff2d55, #ff6b6b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -95,12 +109,21 @@
     </div>
   </div>
 
+    <div id="call-notification" class="call-notification hidden">
+    <span id="call-notif-text">Звонок от ...</span>
+    <button class="btn btn-join" id="call-join-btn">Присоединиться</button>
+    <button class="btn btn-decline" id="call-decline-btn">Отклонить</button>
+  </div>
+
   <div class="header">
     <div>
       <h1>NSFW Chat</h1>
       <div class="users-online" id="users-online">0 онлайн</div>
     </div>
-    <div class="room-badge" id="current-room"># general</div>
+    <div class="header-right">
+      <button class="btn-call idle" id="call-btn">🎤 Звонок</button>
+      <div class="room-badge" id="current-room"># general</div>
+    </div>
   </div>
 
   <div class="chat-container">
@@ -483,6 +506,149 @@
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     });
+
+    const callBtn = document.getElementById('call-btn');
+    const callNotif = document.getElementById('call-notification');
+    const callNotifText = document.getElementById('call-notif-text');
+    const callJoinBtn = document.getElementById('call-join-btn');
+    const callDeclineBtn = document.getElementById('call-decline-btn');
+
+    let callState = 'idle';
+    let localStream = null;
+    let pc = null;
+    let peerSocketId = null;
+    let callTimer = null;
+    let callSeconds = 0;
+
+    callBtn.addEventListener('click', async () => {
+      if (callState === 'idle') {
+        try {
+          localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          callState = 'active';
+          callBtn.textContent = '🔴 Завершить';
+          callBtn.className = 'btn-call active';
+          socket.emit('call-start');
+          startCallTimer();
+        } catch(e) {
+          alert('❌ Нужен доступ к микрофону! Разреши в браузере.');
+        }
+      } else {
+        endCall();
+      }
+    });
+
+    callJoinBtn.addEventListener('click', async () => {
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      } catch(e) { alert('❌ Нужен доступ к микрофону!'); return; }
+      callNotif.classList.add('hidden');
+      socket.emit('call-join', { callerId: peerSocketId });
+      initPC(true);
+      callState = 'joined';
+      callBtn.textContent = '🔊 В звонке';
+      callBtn.className = 'btn-call joined';
+      startCallTimer();
+    });
+
+    callDeclineBtn.addEventListener('click', () => {
+      callNotif.classList.add('hidden');
+      peerSocketId = null;
+    });
+
+    socket.on('call-started', (data) => {
+      if (data.username === username) return;
+      peerSocketId = data.fromId;
+      callNotifText.textContent = `📞 Звонок от ${data.username}`;
+      callNotif.classList.remove('hidden');
+    });
+
+    socket.on('call-ended', () => {
+      callNotif.classList.add('hidden');
+      if (callState !== 'idle') {
+        endCall();
+      }
+    });
+
+    socket.on('call-joined', async (data) => {
+      if (data.username === username) return;
+      if (callState === 'active' && data.callerId === socket.id) {
+        peerSocketId = data.targetId;
+        initPC(false);
+      }
+    });
+
+    socket.on('call-signal', async (data) => {
+      if (!pc) return;
+      try {
+        if (data.signal.type === 'offer') {
+          await pc.setRemoteDescription(new RTCSessionDescription(data.signal));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          socket.emit('call-signal', { signal: answer, to: data.from });
+        } else if (data.signal.type === 'answer') {
+          await pc.setRemoteDescription(new RTCSessionDescription(data.signal));
+        } else if (data.signal.candidate) {
+          await pc.addIceCandidate(new RTCIceCandidate(data.signal));
+        }
+      } catch(e) {}
+    });
+
+    function initPC(isAnswerer) {
+      if (pc) pc.close();
+      pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+
+      if (localStream) localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+      pc.onicecandidate = (e) => {
+        if (e.candidate) {
+          socket.emit('call-signal', { signal: e.candidate, to: peerSocketId });
+        }
+      };
+
+      pc.ontrack = (e) => {
+        const audio = document.createElement('audio');
+        audio.srcObject = e.streams[0];
+        audio.autoplay = true;
+        audio.volume = 1;
+        audio.style.display = 'none';
+        document.body.appendChild(audio);
+      };
+
+      if (!isAnswerer) {
+        pc.createOffer().then(offer => {
+          pc.setLocalDescription(offer);
+          socket.emit('call-signal', { signal: offer, to: peerSocketId });
+        });
+      }
+    }
+
+    function endCall() {
+      if (pc) { pc.close(); pc = null; }
+      if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+      callState = 'idle';
+      peerSocketId = null;
+      callBtn.textContent = '🎤 Звонок';
+      callBtn.className = 'btn-call idle';
+      stopCallTimer();
+      socket.emit('call-end');
+      document.querySelectorAll('audio').forEach(a => a.remove());
+    }
+
+    function startCallTimer() {
+      callSeconds = 0;
+      callTimer = setInterval(() => {
+        callSeconds++;
+        const m = String(Math.floor(callSeconds / 60)).padStart(2, '0');
+        const s = String(callSeconds % 60).padStart(2, '0');
+        if (callState === 'active') callBtn.textContent = `🔴 ${m}:${s}`;
+        else if (callState === 'joined') callBtn.textContent = `🔊 ${m}:${s}`;
+      }, 1000);
+    }
+
+    function stopCallTimer() {
+      clearInterval(callTimer);
+      callTimer = null;
+    }
   </script>
 </body>
 </html>
