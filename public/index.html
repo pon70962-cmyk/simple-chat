@@ -213,8 +213,68 @@
       fileInput.value = '';
     });
 
+    let holdTimer = null;
+
+    function cumshot(el) {
+      const rect = el.getBoundingClientRect();
+      const container = document.createElement('div');
+      container.style.cssText = 'position:fixed;inset:0;z-index:999;pointer-events:none;overflow:hidden';
+      document.body.appendChild(container);
+
+      const fromX = Math.random() * window.innerWidth * 0.3 + window.innerWidth * 0.1;
+      const fromY = -20;
+      const toX = rect.left + rect.width / 2 + (Math.random() - 0.5) * rect.width * 0.6;
+      const toY = rect.top + rect.height / 2 + (Math.random() - 0.5) * rect.height * 0.6;
+
+      const dx = toX - fromX;
+      const dy = toY - fromY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const steps = Math.floor(dist / 8);
+
+      for (let i = 0; i < 60; i++) {
+        const p = document.createElement('div');
+        const progress = i / 60;
+        const spread = (Math.random() - 0.5) * 20;
+        const pdx = dx * progress + (Math.random() - 0.5) * 40;
+        const pdy = dy * progress + (Math.random() - 0.5) * 40 - (1 - progress) * 30;
+        const x = fromX + pdx + spread;
+        const y = fromY + pdy + spread * 0.3;
+        p.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${4 + Math.random() * 6}px;height:${4 + Math.random() * 6}px;border-radius:50%;background:rgba(255,255,255,${0.6 + Math.random() * 0.4});filter:blur(${Math.random() * 2}px)`;
+        container.appendChild(p);
+      }
+
+      for (let i = 0; i < 20; i++) {
+        const drop = document.createElement('div');
+        const angle = Math.random() * Math.PI * 2;
+        const r = Math.random() * 30;
+        drop.style.cssText = `position:absolute;left:${toX + Math.cos(angle) * r}px;top:${toY + Math.sin(angle) * r}px;width:${2 + Math.random() * 4}px;height:${2 + Math.random() * 4}px;border-radius:50%;background:rgba(255,255,255,${0.3 + Math.random() * 0.5});filter:blur(1px)`;
+        container.appendChild(drop);
+      }
+
+      const stain = document.createElement('div');
+      const sw = 20 + Math.random() * 50;
+      const sh = 10 + Math.random() * 20;
+      stain.style.cssText = `position:absolute;left:${toX - sw/2}px;top:${toY - sh/2}px;width:${sw}px;height:${sh}px;border-radius:50%;background:radial-gradient(ellipse,rgba(255,255,255,0.2),rgba(255,255,255,0.05) 60%,transparent);filter:blur(3px);transform:rotate(${Math.random() * 360}deg)`;
+      container.appendChild(stain);
+
+      setTimeout(() => {
+        const stain2 = stain.cloneNode(true);
+        stain2.style.background = 'radial-gradient(ellipse,rgba(255,255,200,0.06),transparent 70%)';
+        document.getElementById('milk-layer').appendChild(stain2);
+        container.remove();
+      }, 3000);
+    }
+
     function renderMessage(msg) {
       const item = document.createElement('div');
+      item.addEventListener('mousedown', () => {
+        holdTimer = setTimeout(() => { cumshot(item); }, 500);
+      });
+      item.addEventListener('mouseup', () => { clearTimeout(holdTimer); });
+      item.addEventListener('mouseleave', () => { clearTimeout(holdTimer); });
+      item.addEventListener('touchstart', (e) => { holdTimer = setTimeout(() => { cumshot(item); }, 500); });
+      item.addEventListener('touchend', (e) => { clearTimeout(holdTimer); });
+      item.addEventListener('touchmove', (e) => { clearTimeout(holdTimer); });
       if (msg.type === 'system') {
         item.className = 'system';
         item.textContent = msg.text;
