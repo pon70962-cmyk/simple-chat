@@ -43,7 +43,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('call-start', () => {
-    io.to(room).emit('call-started', { username, fromId: socket.id });
+    io.to(room).emit('call-started', { username });
   });
 
   socket.on('call-end', () => {
@@ -51,11 +51,18 @@ io.on('connection', (socket) => {
   });
 
   socket.on('call-join', (data) => {
-    io.to(room).emit('call-joined', { username, targetId: socket.id, callerId: data.callerId });
+    io.to(room).emit('call-joined', { username, callerUsername: data.callerUsername });
+  });
+
+  socket.on('call-leave', () => {
+    io.to(room).emit('call-leave', { username });
   });
 
   socket.on('call-signal', (data) => {
-    socket.to(data.to).emit('call-signal', { signal: data.signal, from: socket.id, fromUser: username });
+    const targetSocketId = userSockets[data.toUser];
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('call-signal', { signal: data.signal, fromUser: username });
+    }
   });
 
   socket.on('sendMessage', (data) => {
