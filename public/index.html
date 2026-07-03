@@ -5,7 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: #0d0d0d; color: #fff; height: 100vh; display: flex; flex-direction: column; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #0d0d0d; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    .milk-layer { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+    .milk-splash { position: absolute; background: radial-gradient(ellipse, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 60%, transparent 70%); border-radius: 50%; filter: blur(2px); }
+    .milk-drip { position: absolute; width: 4px; height: 20px; background: linear-gradient(to bottom, rgba(255,255,255,0.15), transparent); border-radius: 0 0 4px 4px; animation: drip 4s ease-in infinite; }
+    .milk-stain { position: absolute; border-radius: 50%; background: radial-gradient(ellipse at 30% 30%, rgba(255,255,255,0.08), rgba(255,255,255,0.02) 60%, transparent); filter: blur(3px); transform: rotate(var(--r, 0deg)); }
+    .milk-drop { position: absolute; width: 6px; height: 6px; background: rgba(255,255,255,0.13); border-radius: 50%; filter: blur(1px); animation: fall linear infinite; }
+
+    @keyframes drip {
+      0% { transform: translateY(-10px); opacity: 0; }
+      30% { opacity: 1; }
+      80% { opacity: 1; }
+      100% { transform: translateY(40px); opacity: 0; }
+    }
+    @keyframes fall {
+      0% { transform: translateY(-20px); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(100vh); opacity: 0; }
+    }
 
     .header { background: #1a1a2e; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #ff2d55; }
     .header h1 { font-size: 20px; background: linear-gradient(45deg, #ff2d55, #ff6b6b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -16,12 +35,12 @@
 
     .sidebar { width: 200px; background: #111; padding: 16px 0; border-right: 1px solid #222; overflow-y: auto; }
     .sidebar-title { padding: 8px 16px; font-size: 11px; text-transform: uppercase; color: #666; letter-spacing: 1px; margin-bottom: 4px; }
-    .room-item { padding: 10px 16px; cursor: pointer; font-size: 14px; color: #aaa; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+    .room-item { padding: 10px 16px; cursor: pointer; font-size: 14px; color: #aaa; display: flex; align-items: center; gap: 8px; transition: 0.2s; position: relative; }
     .room-item:hover { background: #1a1a2e; color: #fff; }
     .room-item.active { background: #1a1a2e; color: #fff; border-left: 3px solid #ff2d55; }
     .room-item .nsfw-badge { font-size: 9px; background: #ff2d55; color: #fff; padding: 1px 6px; border-radius: 8px; margin-left: auto; }
 
-    .main { flex: 1; display: flex; flex-direction: column; }
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 
     #messages { flex: 1; overflow-y: auto; padding: 16px 20px; background: #0d0d0d; }
     .message { margin-bottom: 12px; padding: 10px 14px; border-radius: 8px; max-width: 75%; word-wrap: break-word; }
@@ -32,7 +51,7 @@
     .own .msg-user { color: #ff6b6b; }
     .msg-text { font-size: 14px; line-height: 1.4; }
     .msg-time { font-size: 10px; color: #555; margin-top: 4px; text-align: right; }
-    .msg-img { max-width: 100%; border-radius: 6px; margin-top: 6px; cursor: pointer; }
+    .msg-img { max-width: 100%; border-radius: 6px; margin-top: 6px; cursor: pointer; max-height: 300px; }
 
     .input-area { background: #111; padding: 12px 20px; border-top: 1px solid #222; }
     #form { display: flex; gap: 8px; align-items: center; }
@@ -45,7 +64,7 @@
     .btn-img { background: #2a2a2a; color: #aaa; font-size: 18px; padding: 10px 14px; }
     .btn-img:hover { background: #3a3a3a; }
 
-    canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.25; }
+    canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.2; }
     .header, .chat-container, .input-area { position: relative; z-index: 1; }
 
     .auth-screen { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 1000; }
@@ -64,6 +83,7 @@
   </style>
 </head>
 <body>
+  <div class="milk-layer" id="milk-layer"></div>
   <canvas id="fly-canvas"></canvas>
 
   <div class="auth-screen" id="auth-screen">
@@ -120,6 +140,7 @@
     const usersOnline = document.getElementById('users-online');
     const currentRoom = document.getElementById('current-room');
     const roomList = document.getElementById('room-list');
+    const milkLayer = document.getElementById('milk-layer');
 
     let username = '';
     let room = 'general';
@@ -163,6 +184,12 @@
       socket.emit('joinRoom', { username, room });
     }
 
+    socket.on('chat-history', (history) => {
+      messages.innerHTML = '';
+      history.forEach(msg => renderMessage(msg));
+      messages.scrollTop = messages.scrollHeight;
+    });
+
     function sendMessage(text, img) {
       if (!text && !img) return;
       socket.emit('sendMessage', { message: text, image: img });
@@ -186,7 +213,7 @@
       fileInput.value = '';
     });
 
-    socket.on('message', (msg) => {
+    function renderMessage(msg) {
       const item = document.createElement('div');
       if (msg.type === 'system') {
         item.className = 'system';
@@ -194,13 +221,17 @@
       } else {
         item.className = 'message ' + (msg.user === username ? 'own' : 'other');
         const time = new Date(msg.time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-        let html = `<div class="msg-user">${msg.user}</div><div class="msg-text">${escapeHtml(msg.text || '')}</div>`;
+        let html = `<div class="msg-user">${escapeHtml(msg.user)}</div><div class="msg-text">${escapeHtml(msg.text || '')}</div>`;
         if (msg.image) html += `<img src="${msg.image}" class="msg-img" onclick="window.open(this.src)">`;
         html += `<div class="msg-time">${time}</div>`;
         item.innerHTML = html;
       }
       messages.appendChild(item);
       messages.scrollTop = messages.scrollHeight;
+    }
+
+    socket.on('message', (msg) => {
+      renderMessage(msg);
     });
 
     socket.on('users-count', (count) => {
@@ -212,6 +243,51 @@
       d.textContent = text;
       return d.innerHTML;
     }
+
+    function createMilkSplashes() {
+      for (let i = 0; i < 20; i++) {
+        const splash = document.createElement('div');
+        splash.className = 'milk-splash';
+        const size = 40 + Math.random() * 200;
+        splash.style.width = size + 'px';
+        splash.style.height = size * (0.4 + Math.random() * 0.6) + 'px';
+        splash.style.left = Math.random() * 100 + '%';
+        splash.style.top = Math.random() * 100 + '%';
+        splash.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
+        milkLayer.appendChild(splash);
+      }
+      for (let i = 0; i < 15; i++) {
+        const stain = document.createElement('div');
+        stain.className = 'milk-stain';
+        const w = 30 + Math.random() * 120;
+        const h = w * (0.3 + Math.random() * 0.7);
+        stain.style.width = w + 'px';
+        stain.style.height = h + 'px';
+        stain.style.left = Math.random() * 100 + '%';
+        stain.style.top = Math.random() * 100 + '%';
+        stain.style.setProperty('--r', Math.random() * 360 + 'deg');
+        milkLayer.appendChild(stain);
+      }
+      for (let i = 0; i < 8; i++) {
+        const drip = document.createElement('div');
+        drip.className = 'milk-drip';
+        drip.style.left = Math.random() * 100 + '%';
+        drip.style.animationDuration = (3 + Math.random() * 3) + 's';
+        drip.style.animationDelay = (Math.random() * 5) + 's';
+        drip.style.height = (12 + Math.random() * 20) + 'px';
+        milkLayer.appendChild(drip);
+      }
+      for (let i = 0; i < 12; i++) {
+        const drop = document.createElement('div');
+        drop.className = 'milk-drop';
+        drop.style.left = Math.random() * 100 + '%';
+        drop.style.width = drop.style.height = (3 + Math.random() * 5) + 'px';
+        drop.style.animationDuration = (6 + Math.random() * 6) + 's';
+        drop.style.animationDelay = (Math.random() * 8) + 's';
+        milkLayer.appendChild(drop);
+      }
+    }
+    createMilkSplashes();
 
     const canvas = document.getElementById('fly-canvas');
     const ctx = canvas.getContext('2d');
@@ -245,13 +321,10 @@
       ctx.save();
       ctx.translate(d.x, d.y);
       ctx.rotate(d.tilt + Math.sin(d.swing) * 0.2);
-
       if (d.left) ctx.scale(-1, 1);
-
       ctx.fillStyle = d.color;
       ctx.strokeStyle = 'rgba(0,0,0,0.2)';
       ctx.lineWidth = 2;
-
       ctx.beginPath();
       ctx.moveTo(-d.w/3, -d.h);
       ctx.quadraticCurveTo(d.w/2, -d.h, d.w/3, -d.h * 0.6);
@@ -264,38 +337,30 @@
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
-
       ctx.beginPath();
       ctx.arc(0, -d.h, d.w/4, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
-
       ctx.fillStyle = 'rgba(255,255,255,0.15)';
       ctx.beginPath();
       ctx.ellipse(-d.w/6, -d.h * 0.5, d.w/8, d.h/6, 0, 0, Math.PI * 2);
       ctx.fill();
-
       ctx.restore();
     }
 
     function animate() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
       dongs.forEach(d => {
         d.y -= d.speed;
         d.swing += d.swingSpeed;
-
         if (d.y < -120) {
           Object.assign(d, createDong());
           d.y = canvas.height + 60;
         }
-
         drawDong(d);
       });
-
       requestAnimationFrame(animate);
     }
-
     animate();
 
     window.addEventListener('resize', () => {

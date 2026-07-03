@@ -5,11 +5,12 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, { maxHttpBufferSize: 1e8 });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
 const roomUsers = {};
+const roomHistory = {};
 
 io.on('connection', (socket) => {
   let username = 'Аноним';
@@ -25,6 +26,7 @@ io.on('connection', (socket) => {
     if (!roomUsers[room]) roomUsers[room] = new Set();
     roomUsers[room].add(socket.id);
     updateUsersCount();
+    socket.emit('chat-history', roomHistory[room] || []);
     socket.to(room).emit('message', { type: 'system', text: `${username} присоединился к ${room}` });
   });
 
@@ -35,13 +37,17 @@ io.on('connection', (socket) => {
   });
 
   socket.on('sendMessage', (data) => {
-    io.to(room).emit('message', {
+    const msg = {
       user: username,
       text: data.message || '',
       image: data.image || '',
       time: Date.now(),
       type: 'user'
-    });
+    };
+    if (!roomHistory[room]) roomHistory[room] = [];
+    roomHistory[room].push(msg);
+    if (roomHistory[room].length > 200) roomHistory[room].shift();
+    io.to(room).emit('message', msg);
   });
 
   socket.on('disconnect', () => {
