@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; background: #0d0d0d; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    body { font-family: 'gg sans', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background: #1e1f22; color: #dbdee1; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
     .milk-layer { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
     .milk-splash { position: absolute; background: radial-gradient(ellipse, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 60%, transparent 70%); border-radius: 50%; filter: blur(2px); }
@@ -26,122 +26,133 @@
       100% { transform: translateY(100vh); opacity: 0; }
     }
 
-    .header { background: #1a1a2e; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #ff2d55; }
-    .header h1 { font-size: 20px; background: linear-gradient(45deg, #ff2d55, #ff6b6b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .header .room-badge { background: #ff2d55; padding: 4px 12px; border-radius: 12px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
-    .header .users-online { color: #888; font-size: 13px; }
+    canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.15; }
 
-    .chat-container { flex: 1; display: flex; max-width: 900px; margin: 0 auto; width: 100%; }
+    .app-layout { display: flex; flex: 1; position: relative; z-index: 1; min-height: 0; }
+    .server-bar { width: 72px; background: #1e1f22; display: flex; flex-direction: column; align-items: center; padding-top: 12px; gap: 8px; flex-shrink: 0; overflow-y: auto; }
+    .server-icon { width: 48px; height: 48px; border-radius: 24px; background: #313338; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: border-radius 0.15s; font-size: 20px; color: #dbdee1; position: relative; }
+    .server-icon:hover { border-radius: 14px; background: #5865f2; }
+    .server-icon.active { border-radius: 14px; background: #5865f2; }
+    .server-icon::before { content: ''; position: absolute; left: -12px; width: 8px; height: 0; background: #fff; border-radius: 0 4px 4px 0; transition: height 0.15s; }
+    .server-icon.active::before, .server-icon:hover::before { height: 20px; }
+    .server-divider { width: 32px; height: 2px; border-radius: 1px; background: #35373c; margin: 4px 0; }
 
-    .sidebar { width: 200px; background: #111; padding: 16px 0; border-right: 1px solid #222; overflow-y: auto; }
-    .sidebar-title { padding: 8px 16px; font-size: 11px; text-transform: uppercase; color: #666; letter-spacing: 1px; margin-bottom: 4px; }
-    .room-item { padding: 10px 16px; cursor: pointer; font-size: 14px; color: #aaa; display: flex; align-items: center; gap: 8px; transition: 0.2s; position: relative; }
-    .room-item:hover { background: #1a1a2e; color: #fff; }
-    .room-item.active { background: #1a1a2e; color: #fff; border-left: 3px solid #ff2d55; }
-    .room-item .nsfw-badge { font-size: 9px; background: #ff2d55; color: #fff; padding: 1px 6px; border-radius: 8px; margin-left: auto; }
+    .sidebar { width: 240px; background: #2b2d31; display: flex; flex-direction: column; flex-shrink: 0; }
+    .sidebar-header { height: 48px; padding: 0 16px; display: flex; align-items: center; font-weight: 600; font-size: 15px; color: #f2f3f5; border-bottom: 1px solid #1e1f22; cursor: pointer; flex-shrink: 0; }
+    .sidebar-header:hover { background: #35373c; }
+    .sidebar-section { padding: 16px 8px 0; font-size: 12px; font-weight: 600; color: #949ba4; display: flex; align-items: center; justify-content: space-between; text-transform: uppercase; letter-spacing: 0.5px; }
+    .room-item { padding: 6px 8px; margin: 1px 8px; cursor: pointer; font-size: 15px; color: #949ba4; display: flex; align-items: center; gap: 6px; transition: 0.1s; border-radius: 4px; font-weight: 500; }
+    .room-item:hover { background: #35373c; color: #dbdee1; }
+    .room-item.active { background: #404249; color: #dbdee1; }
+    .room-item .hash { font-size: 20px; font-weight: 300; color: #80848e; flex-shrink: 0; }
+    .room-item.active .hash { color: #dbdee1; }
+    .room-item .nsfw-badge { font-size: 10px; background: #ed4245; color: #fff; padding: 1px 6px; border-radius: 8px; margin-left: auto; font-weight: 700; letter-spacing: 0.3px; }
 
-    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; background: #313338; }
+    .chat-header { height: 48px; padding: 0 16px; display: flex; align-items: center; border-bottom: 1px solid #1e1f22; flex-shrink: 0; gap: 8px; }
+    .chat-header .hash { font-size: 22px; color: #80848e; font-weight: 300; }
+    .chat-header .name { font-size: 15px; font-weight: 600; color: #f2f3f5; }
+    .chat-header .divider { width: 1px; height: 24px; background: #3f4147; margin: 0 12px; }
+    .chat-header .topic { font-size: 13px; color: #949ba4; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .chat-header-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 
-    #messages { flex: 1; overflow-y: auto; padding: 16px 20px; background: #0d0d0d; }
-    .message { margin-bottom: 12px; padding: 10px 14px; border-radius: 8px; max-width: 75%; word-wrap: break-word; }
-    .own { background: #1a1a2e; margin-left: auto; border-bottom-right-radius: 2px; }
-    .other { background: #1e1e1e; margin-right: auto; border-bottom-left-radius: 2px; }
-    .system { text-align: center; color: #666; font-size: 12px; margin: 8px 0; }
-    .msg-user { font-size: 12px; font-weight: 700; color: #ff2d55; margin-bottom: 4px; }
-    .own .msg-user { color: #ff6b6b; }
-    .msg-text { font-size: 14px; line-height: 1.4; }
-    .msg-time { font-size: 10px; color: #555; margin-top: 4px; text-align: right; }
-    .msg-img { max-width: 100%; border-radius: 6px; margin-top: 6px; cursor: pointer; max-height: 300px; }
+    .btn-call { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: 0.15s; }
+    .btn-call.idle { background: #248046; color: #fff; }
+    .btn-call.idle:hover { background: #1a6334; }
+    .btn-call.active { background: #da373c; color: #fff; animation: pulse 1.5s infinite; }
+    .btn-call.active:hover { background: #a1282b; }
+    .btn-call.joined { background: #248046; color: #fff; }
 
-    .input-area { background: #111; padding: 12px 20px; border-top: 1px solid #222; }
-    #form { display: flex; gap: 8px; align-items: center; }
-    #input { flex: 1; padding: 12px 16px; background: #1e1e1e; border: none; border-radius: 8px; color: #fff; font-size: 14px; outline: none; }
-    #input:focus { border: 1px solid #ff2d55; }
-    .btn-group { display: flex; gap: 6px; }
-    .btn { padding: 10px 16px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; transition: 0.2s; }
-    .btn-send { background: #ff2d55; color: #fff; }
-    .btn-send:hover { background: #e6264a; }
-    .btn-img { background: #2a2a2a; color: #aaa; font-size: 18px; padding: 10px 14px; }
-    .btn-img:hover { background: #3a3a3a; }
+    @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(218,55,60,0.5); } 50% { box-shadow: 0 0 0 8px rgba(218,55,60,0); } }
 
-    canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.2; }
-    .header, .chat-container, .input-area, .videos-grid-wrapper { position: relative; z-index: 1; }
+    .call-notification { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: #2b2d31; border: 1px solid #3f4147; border-radius: 8px; padding: 16px 24px; z-index: 1001; display: flex; align-items: center; gap: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+    .call-notification span { font-size: 14px; color: #dbdee1; }
+    .btn-join { background: #248046; color: #fff; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; }
+    .btn-join:hover { background: #1a6334; }
+    .btn-decline { background: #4e5058; color: #fff; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; }
+    .btn-decline:hover { background: #6d6f78; }
 
-    .videos-grid-wrapper { flex: 1; overflow-y: auto; padding: 12px; display: none; }
-    .videos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
-    .videos-grid .vid-item { position: relative; border-radius: 8px; overflow: hidden; background: #1e1e1e; aspect-ratio: 1; }
+    .member-list { width: 240px; background: #2b2d31; padding: 16px 8px 0; flex-shrink: 0; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+    .member-section { font-size: 12px; font-weight: 600; color: #949ba4; text-transform: uppercase; letter-spacing: 0.5px; padding: 0 8px 4px; }
+    .member-item { padding: 6px 8px; display: flex; align-items: center; gap: 8px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500; color: #949ba4; }
+    .member-item:hover { background: #35373c; color: #dbdee1; }
+    .member-item .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #23a55a; flex-shrink: 0; }
+
+    #messages { flex: 1; overflow-y: auto; padding: 16px 16px 0; background: #313338; }
+    .message { padding: 4px 16px 4px 0; display: flex; gap: 16px; margin-left: 16px; position: relative; }
+    .message:hover { background: #2e3035; }
+    .message .avatar { width: 40px; height: 40px; border-radius: 50%; background: #5865f2; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; color: #fff; flex-shrink: 0; margin-top: 2px; }
+    .message .body { flex: 1; min-width: 0; }
+    .message .body .msg-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
+    .message .body .msg-user { font-size: 15px; font-weight: 500; color: #f2f3f5; cursor: pointer; }
+    .message .body .msg-user:hover { text-decoration: underline; }
+    .message .body .msg-time { font-size: 11px; color: #949ba4; font-weight: 400; }
+    .message .body .msg-text { font-size: 15px; line-height: 1.4; color: #dbdee1; }
+    .message .body .msg-img { max-width: 400px; max-height: 300px; border-radius: 8px; margin-top: 8px; cursor: pointer; }
+    .system { text-align: center; color: #949ba4; font-size: 13px; padding: 8px 0; }
+
+    .input-area { background: #313338; padding: 0 16px 20px; flex-shrink: 0; }
+    .input-wrapper { background: #383a40; border-radius: 8px; padding: 0 12px; display: flex; align-items: center; gap: 8px; border: 1px solid #1e1f22; }
+    .input-wrapper:focus-within { border-color: #5865f2; }
+    #input { flex: 1; padding: 11px 0; background: transparent; border: none; color: #dbdee1; font-size: 15px; outline: none; font-family: inherit; }
+    #input::placeholder { color: #80848e; }
+    .btn-img { background: transparent; border: none; color: #80848e; cursor: pointer; padding: 6px; font-size: 18px; border-radius: 4px; transition: 0.1s; }
+    .btn-img:hover { color: #dbdee1; background: #2b2d31; }
+
+    .videos-grid-wrapper { flex: 1; overflow-y: auto; padding: 12px; display: none; background: #313338; }
+    .videos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+    .videos-grid .vid-item { position: relative; border-radius: 8px; overflow: hidden; background: #2b2d31; aspect-ratio: 1; cursor: pointer; }
+    .videos-grid .vid-item:hover { outline: 2px solid #5865f2; }
     .videos-grid .vid-item img, .videos-grid .vid-item video { width: 100%; height: 100%; object-fit: cover; }
-    .videos-grid .vid-item .vid-user { position: absolute; bottom: 0; left: 0; right: 0; padding: 4px 8px; background: rgba(0,0,0,0.6); font-size: 11px; color: #aaa; }
-    .videos-grid .vid-loading { text-align: center; padding: 30px; color: #666; font-size: 14px; }
+    .videos-grid .vid-item .vid-user { position: absolute; bottom: 0; left: 0; right: 0; padding: 4px 8px; background: linear-gradient(transparent, rgba(0,0,0,0.7)); font-size: 12px; color: #dbdee1; pointer-events: none; }
+    .videos-grid .vid-loading { text-align: center; padding: 30px; color: #949ba4; font-size: 14px; }
 
-    .header-right { display: flex; align-items: center; gap: 10px; }
-    .btn-call { padding: 8px 16px; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 700; transition: 0.2s; }
-    .btn-call.idle { background: #2a2a2a; color: #aaa; }
-    .btn-call.idle:hover { background: #3a3a3a; color: #fff; }
-    .btn-call.active { background: #ff2d55; color: #fff; animation: pulse 1.5s infinite; }
-    .btn-call.joined { background: #25d366; color: #fff; }
-
-    @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,45,85,0.5); } 50% { box-shadow: 0 0 0 10px rgba(255,45,85,0); } }
-
-    .call-notification { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #1a1a2e; border: 1px solid #ff2d55; border-radius: 12px; padding: 16px 24px; z-index: 1001; display: flex; align-items: center; gap: 16px; box-shadow: 0 4px 30px rgba(0,0,0,0.5); }
-    .call-notification .btn { padding: 8px 20px; }
-    .btn-join { background: #25d366; color: #fff; }
-    .btn-decline { background: #555; color: #fff; }
-
-    .auth-screen { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-    .auth-box { background: #1a1a2e; padding: 40px; border-radius: 16px; text-align: center; border: 1px solid #ff2d55; max-width: 360px; width: 90%; }
-    .auth-box h2 { margin-bottom: 8px; background: linear-gradient(45deg, #ff2d55, #ff6b6b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .auth-box p { color: #888; font-size: 13px; margin-bottom: 20px; }
-    .auth-box input { width: 100%; padding: 12px; background: #0d0d0d; border: 1px solid #333; border-radius: 8px; color: #fff; font-size: 14px; margin-bottom: 12px; outline: none; }
-    .auth-box input:focus { border-color: #ff2d55; }
-    .auth-box .btn { width: 100%; margin-top: 4px; }
+    .auth-screen { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .auth-box { background: #313338; padding: 32px; border-radius: 8px; text-align: center; max-width: 400px; width: 90%; }
+    .auth-box h2 { margin-bottom: 4px; font-size: 24px; font-weight: 600; color: #f2f3f5; }
+    .auth-box p { color: #b5bac1; font-size: 14px; margin-bottom: 20px; }
+    .auth-box input { width: 100%; padding: 10px; background: #1e1f22; border: 1px solid #3f4147; border-radius: 4px; color: #dbdee1; font-size: 15px; margin-bottom: 12px; outline: none; font-family: inherit; }
+    .auth-box input:focus { border-color: #5865f2; }
+    .auth-box .btn { width: 100%; padding: 12px; background: #5865f2; color: #fff; border: none; border-radius: 4px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
+    .auth-box .btn:hover { background: #4752c4; }
 
     .hidden { display: none !important; }
 
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; border: 2px solid transparent; }
+    ::-webkit-scrollbar-thumb { background: #1f2022; border-radius: 4px; border: 2px solid #313338; }
+    ::-webkit-scrollbar-thumb:hover { background: #3f4147; }
 
     @media (max-width: 768px) {
-      .sidebar { width: 60px; }
-      .sidebar .room-item span { display: none; }
-      .sidebar .room-item { justify-content: center; padding: 12px 8px; font-size: 18px; }
-      .sidebar .nsfw-badge { display: none; }
-      .sidebar-title { display: none; }
-      .header h1 { font-size: 15px; }
-      .header .users-online { font-size: 11px; }
-      .btn-call { padding: 6px 10px; font-size: 11px; }
-      .room-badge { font-size: 10px; padding: 3px 8px; }
-      .message { max-width: 90%; padding: 8px 12px; }
-      .msg-text { font-size: 13px; }
-      .videos-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
-      #messages { padding: 10px 12px; }
-      .input-area { padding: 8px 10px; }
-      #input { padding: 10px 12px; font-size: 14px; }
-      .btn { padding: 10px 14px; font-size: 13px; }
-      .btn-img { font-size: 16px; padding: 10px 12px; }
-      .call-notification { top: 10px; left: 10px; right: 10px; transform: none; padding: 12px 16px; font-size: 13px; flex-wrap: wrap; gap: 10px; }
-      .auth-box { padding: 30px 20px; }
-      .header { padding: 10px 12px; }
-      .header-right { gap: 6px; }
-      canvas { opacity: 0.1; }
-      .milk-layer { opacity: 0.6; }
+      .server-bar { width: 48px; }
+      .server-icon { width: 36px; height: 36px; font-size: 14px; }
+      .sidebar { width: 180px; }
+      .member-list { display: none; }
+      .room-item { font-size: 14px; padding: 4px 6px; }
+      .message .avatar { width: 32px; height: 32px; font-size: 13px; }
+      .message .body .msg-text { font-size: 14px; }
+      .videos-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+      .call-notification { top: 10px; left: 10px; right: 10px; transform: none; }
     }
 
     @media (max-width: 480px) {
-      .sidebar { width: 44px; }
-      .sidebar .room-item { padding: 10px 4px; font-size: 14px; }
-      #messages { padding: 8px; }
-      .message { max-width: 95%; font-size: 12px; }
-      .msg-text { font-size: 12px; }
-      .msg-user { font-size: 10px; }
+      .server-bar { width: 36px; }
+      .server-icon { width: 28px; height: 28px; font-size: 11px; border-radius: 14px; }
+      .sidebar { width: 140px; }
+      .sidebar-header { height: 40px; font-size: 13px; padding: 0 10px; }
+      .room-item { font-size: 12px; padding: 3px 4px; margin: 1px 4px; }
+      .room-item .hash { font-size: 14px; }
+      .chat-header { height: 40px; padding: 0 8px; }
+      .chat-header .name { font-size: 13px; }
+      .message { padding: 2px 8px 2px 0; margin-left: 8px; gap: 8px; }
+      .message .avatar { width: 28px; height: 28px; font-size: 11px; }
+      .message .body .msg-user { font-size: 13px; }
+      .message .body .msg-text { font-size: 13px; }
+      .message .body .msg-img { max-width: 100%; }
+      .input-area { padding: 0 8px 12px; }
+      #input { font-size: 14px; padding: 10px 0; }
       .videos-grid { grid-template-columns: repeat(2, 1fr); gap: 4px; }
-      .btn-call { padding: 5px 8px; font-size: 10px; }
-      .header h1 { font-size: 13px; }
-      .header .users-online { display: none; }
-      .call-notification { font-size: 12px; padding: 10px 12px; }
-      .auth-box h2 { font-size: 18px; }
-      .auth-box p { font-size: 12px; }
+      canvas { opacity: 0.08; }
     }
   </style>
 </head>
@@ -154,49 +165,53 @@
       <h2>NSFW Chat</h2>
       <p>Вам есть 18+ лет? Введите никнейм чтобы войти</p>
       <input id="auth-input" placeholder="Ваш никнейм" maxlength="20" autofocus>
-      <button class="btn btn-send" id="auth-btn" style="width:100%">Войти в чат</button>
+      <button class="btn" id="auth-btn">Войти в чат</button>
     </div>
   </div>
 
-    <div id="call-notification" class="call-notification hidden">
-    <span id="call-notif-text">Звонок от ...</span>
-    <button class="btn btn-join" id="call-join-btn">Присоединиться</button>
-    <button class="btn btn-decline" id="call-decline-btn">Отклонить</button>
+  <div id="call-notification" class="call-notification hidden">
+    <span id="call-notif-text">📞 Звонок от ...</span>
+    <button class="btn-join" id="call-join-btn">Присоединиться</button>
+    <button class="btn-decline" id="call-decline-btn">Отклонить</button>
   </div>
 
-  <div class="header">
-    <div>
-      <h1>NSFW Chat</h1>
-      <div class="users-online" id="users-online">0 онлайн</div>
-    </div>
-    <div class="header-right">
-      <button class="btn-call idle" id="call-btn">🎤 Звонок</button>
-      <div class="room-badge" id="current-room"># general</div>
-    </div>
-  </div>
+  <div class="app-layout">
+    <div class="server-bar" id="server-bar"></div>
 
-  <div class="chat-container">
     <div class="sidebar">
-      <div class="sidebar-title">Комнаты</div>
+      <div class="sidebar-header" id="sidebar-header">NSFW Chat</div>
+      <div class="sidebar-section">Текстовые каналы</div>
       <div id="room-list"></div>
     </div>
 
     <div class="main">
+      <div class="chat-header">
+        <span class="hash" id="header-hash">#</span>
+        <span class="name" id="header-name">general</span>
+        <div class="divider"></div>
+        <span class="topic" id="header-topic">Общий чат</span>
+        <div class="chat-header-right">
+          <span class="topic" id="users-online">0</span>
+          <button class="btn-call idle" id="call-btn">🎤</button>
+        </div>
+      </div>
+
       <div id="messages"></div>
       <div class="videos-grid-wrapper" id="videos-grid-wrapper">
         <div class="videos-grid" id="videos-grid"></div>
-        <div class="vid-loading" id="vid-loading">🎬 Загружаем видео...</div>
+        <div class="vid-loading" id="vid-loading">Загружаем контент...</div>
       </div>
 
       <div class="input-area">
-        <form id="form" autocomplete="off">
-          <input id="input" autocomplete="off" placeholder="Написать сообщение..." />
-          <div class="btn-group">
-            <button type="button" class="btn btn-img" id="img-btn" title="Отправить изображение">🖼</button>
-            <button type="submit" class="btn btn-send">Отправить</button>
-          </div>
-        </form>
+        <div class="input-wrapper">
+          <input id="input" autocomplete="off" placeholder="Написать в #general" />
+          <button type="button" class="btn-img" id="img-btn" title="Прикрепить">📎</button>
+        </div>
       </div>
+    </div>
+
+    <div class="member-list" id="member-list">
+      <div class="member-section">В сети — <span id="member-count">0</span></div>
     </div>
   </div>
 
@@ -205,7 +220,6 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
-    const form = document.getElementById('form');
     const input = document.getElementById('input');
     const messages = document.getElementById('messages');
     const authScreen = document.getElementById('auth-screen');
@@ -214,19 +228,28 @@
     const fileInput = document.getElementById('file-input');
     const imgBtn = document.getElementById('img-btn');
     const usersOnline = document.getElementById('users-online');
-    const currentRoom = document.getElementById('current-room');
+    const memberCount = document.getElementById('member-count');
+    const memberList = document.getElementById('member-list');
+    const headerName = document.getElementById('header-name');
+    const headerTopic = document.getElementById('header-topic');
     const roomList = document.getElementById('room-list');
     const milkLayer = document.getElementById('milk-layer');
+    const callBtn = document.getElementById('call-btn');
+    const callNotif = document.getElementById('call-notification');
+    const callNotifText = document.getElementById('call-notif-text');
+    const callJoinBtn = document.getElementById('call-join-btn');
+    const callDeclineBtn = document.getElementById('call-decline-btn');
+    const serverBar = document.getElementById('server-bar');
 
     let username = '';
     let room = 'general';
 
     const rooms = [
-      { id: 'general', name: 'Общий чат', nsfw: false },
-      { id: 'nsfw', name: 'NSFW', nsfw: true },
-      { id: 'nsfw-hard', name: 'NSFW Hard', nsfw: true },
-      { id: 'videos', name: 'Videos', nsfw: true, mediaOnly: true },
-      { id: 'random', name: 'Random', nsfw: false }
+      { id: 'general', name: 'general', topic: 'Общий чат', nsfw: false },
+      { id: 'nsfw', name: 'nsfw', topic: 'NSFW контент', nsfw: true },
+      { id: 'nsfw-hard', name: 'nsfw-hard', topic: 'Жёсткий NSFW', nsfw: true },
+      { id: 'videos', name: 'videos', topic: 'Только медиа', nsfw: true, mediaOnly: true },
+      { id: 'random', name: 'random', topic: 'Рандом', nsfw: false }
     ];
 
     function renderRooms() {
@@ -234,7 +257,7 @@
       rooms.forEach(r => {
         const div = document.createElement('div');
         div.className = 'room-item' + (r.id === room ? ' active' : '');
-        div.innerHTML = `<span># ${r.name}</span>${r.nsfw ? '<span class="nsfw-badge">18+</span>' : ''}`;
+        div.innerHTML = `<span class="hash">#</span><span>${r.name}</span>${r.nsfw ? '<span class="nsfw-badge">NSFW</span>' : ''}`;
         div.addEventListener('click', () => {
           if (username) {
             socket.emit('leaveRoom', { room });
@@ -244,9 +267,7 @@
               messages.style.display = 'none';
               document.getElementById('videos-grid-wrapper').style.display = 'block';
               input.style.display = 'none';
-              document.querySelector('.btn-send').style.display = 'none';
-              imgBtn.style.display = 'inline-block';
-              document.querySelector('.btn-group').style.display = 'flex';
+              imgBtn.style.display = 'none';
               if (!document.getElementById('videos-grid').children.length || document.getElementById('videos-grid').children.length <= 1) {
                 fetchNSFWContent();
               }
@@ -255,11 +276,11 @@
               messages.style.display = 'block';
               document.getElementById('videos-grid-wrapper').style.display = 'none';
               input.style.display = 'block';
-              document.querySelector('.btn-send').style.display = 'inline-block';
               imgBtn.style.display = 'inline-block';
-              document.querySelector('.btn-group').style.display = 'flex';
             }
-            currentRoom.textContent = '# ' + r.name;
+            headerName.textContent = r.name;
+            headerTopic.textContent = r.topic;
+            input.placeholder = 'Написать в #' + r.name;
             renderRooms();
           }
         });
@@ -268,52 +289,18 @@
     }
     renderRooms();
 
-    const nsfwApis = [
-      'https://api.waifu.im/search?is_nsfw=true&gif=true&limit=3',
-      'https://nekobot.xyz/api/image?type=4k',
-      'https://nekobot.xyz/api/image?type=hentai',
-      'https://nekobot.xyz/api/image?type=pgif'
-    ];
-    let nsfwVideos = [];
-    let loadingVideos = false;
-
-    async function fetchNSFWContent() {
-      const grid = document.getElementById('videos-grid');
-      const loading = document.getElementById('vid-loading');
-      if (loadingVideos) return;
-      loadingVideos = true;
-      loading.style.display = 'block';
-
-      try {
-        const api = nsfwApis[Math.floor(Math.random() * nsfwApis.length)];
-        const res = await fetch(api);
-        const json = await res.json();
-        let images = [];
-
-        if (json.images) {
-          images = json.images.map(i => ({ url: i.url, user: 'waifu.im' }));
-        } else if (json.message && json.success) {
-          images = [{ url: json.message, user: 'nekobot' }];
-        }
-
-        images.forEach(img => {
-          if (!nsfwVideos.find(v => v.url === img.url)) {
-            nsfwVideos.push(img);
-            const div = document.createElement('div');
-            div.className = 'vid-item';
-            const isVid = img.url.match(/\.(mp4|webm)$/i);
-            div.innerHTML = isVid ? `<video src="${img.url}" autoplay loop muted></video><div class="vid-user">${img.user}</div>` : `<img src="${img.url}" loading="lazy"><div class="vid-user">${img.user}</div>`;
-            div.addEventListener('click', () => window.open(img.url, '_blank'));
-            grid.appendChild(div);
-          }
-        });
-      } catch(e) {}
-
-      loading.style.display = 'none';
-      loadingVideos = false;
-
-      setTimeout(fetchNSFWContent, 15000);
-    }
+    const serverIcons = ['💬', '🔞', '🔥', '🎬', '🎲'];
+    rooms.forEach((r, i) => {
+      const div = document.createElement('div');
+      div.className = 'server-icon' + (r.id === room ? ' active' : '');
+      div.textContent = serverIcons[i];
+      div.title = r.name;
+      div.addEventListener('click', () => div.click());
+      serverBar.appendChild(div);
+    });
+    const divd = document.createElement('div');
+    divd.className = 'server-divider';
+    serverBar.appendChild(divd);
 
     authBtn.addEventListener('click', enterChat);
     authInput.addEventListener('keydown', e => { if (e.key === 'Enter') enterChat(); });
@@ -343,9 +330,11 @@
       input.value = '';
     }
 
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      if (input.value.trim()) sendMessage(input.value.trim());
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (input.value.trim()) sendMessage(input.value.trim());
+      }
     });
 
     imgBtn.addEventListener('click', () => fileInput.click());
@@ -353,14 +342,10 @@
       const file = fileInput.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = (e) => {
-        sendMessage('', e.target.result);
-      };
+      reader.onload = (e) => { sendMessage('', e.target.result); };
       reader.readAsDataURL(file);
       fileInput.value = '';
     });
-
-    imgBtn.style.display = 'block';
 
     let holdTimer = null;
     let msgCounter = 0;
@@ -369,38 +354,24 @@
       try {
         const actx = new (window.AudioContext || window.webkitAudioContext)();
         const dur = 0.6;
-
         const osc = actx.createOscillator();
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(200, actx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(60, actx.currentTime + dur * 0.3);
-
         const noise = actx.createBufferSource();
         const buf = actx.createBuffer(1, actx.sampleRate * dur, actx.sampleRate);
         const data = buf.getChannelData(0);
-        for (let i = 0; i < data.length; i++) {
-          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (actx.sampleRate * 0.08));
-        }
+        for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (actx.sampleRate * 0.08));
         noise.buffer = buf;
-
         const gain = actx.createGain();
         gain.gain.setValueAtTime(0.3, actx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + dur);
-
         const filter = actx.createBiquadFilter();
         filter.type = 'lowpass';
         filter.frequency.setValueAtTime(3000, actx.currentTime);
         filter.frequency.exponentialRampToValueAtTime(200, actx.currentTime + dur);
-
-        osc.connect(gain);
-        noise.connect(filter);
-        filter.connect(gain);
-        gain.connect(actx.destination);
-
-        osc.start();
-        noise.start();
-        osc.stop(actx.currentTime + dur);
-        noise.stop(actx.currentTime + dur);
+        osc.connect(gain); noise.connect(filter); filter.connect(gain); gain.connect(actx.destination);
+        osc.start(); noise.start(); osc.stop(actx.currentTime + dur); noise.stop(actx.currentTime + dur);
       } catch(e) {}
     }
 
@@ -410,43 +381,31 @@
       const container = document.createElement('div');
       container.style.cssText = 'position:fixed;inset:0;z-index:999;pointer-events:none;overflow:hidden';
       document.body.appendChild(container);
-
       const fromX = Math.random() * window.innerWidth * 0.3 + window.innerWidth * 0.1;
       const fromY = -20;
       const toX = rect.left + rect.width / 2 + (Math.random() - 0.5) * rect.width * 0.6;
       const toY = rect.top + rect.height / 2 + (Math.random() - 0.5) * rect.height * 0.6;
-
-      const dx = toX - fromX;
-      const dy = toY - fromY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const steps = Math.floor(dist / 8);
-
+      const dx = toX - fromX; const dy = toY - fromY;
       for (let i = 0; i < 60; i++) {
         const p = document.createElement('div');
         const progress = i / 60;
         const spread = (Math.random() - 0.5) * 20;
-        const pdx = dx * progress + (Math.random() - 0.5) * 40;
-        const pdy = dy * progress + (Math.random() - 0.5) * 40 - (1 - progress) * 30;
-        const x = fromX + pdx + spread;
-        const y = fromY + pdy + spread * 0.3;
-        p.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${4 + Math.random() * 6}px;height:${4 + Math.random() * 6}px;border-radius:50%;background:rgba(255,255,255,${0.6 + Math.random() * 0.4});filter:blur(${Math.random() * 2}px)`;
+        const x = fromX + dx * progress + (Math.random() - 0.5) * 40 + spread;
+        const y = fromY + dy * progress + (Math.random() - 0.5) * 40 - (1 - progress) * 30 + spread * 0.3;
+        p.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${4+Math.random()*6}px;height:${4+Math.random()*6}px;border-radius:50%;background:rgba(255,255,255,${0.6+Math.random()*0.4});filter:blur(${Math.random()*2}px)`;
         container.appendChild(p);
       }
-
       for (let i = 0; i < 20; i++) {
         const drop = document.createElement('div');
         const angle = Math.random() * Math.PI * 2;
         const r = Math.random() * 30;
-        drop.style.cssText = `position:absolute;left:${toX + Math.cos(angle) * r}px;top:${toY + Math.sin(angle) * r}px;width:${2 + Math.random() * 4}px;height:${2 + Math.random() * 4}px;border-radius:50%;background:rgba(255,255,255,${0.3 + Math.random() * 0.5});filter:blur(1px)`;
+        drop.style.cssText = `position:absolute;left:${toX+Math.cos(angle)*r}px;top:${toY+Math.sin(angle)*r}px;width:${2+Math.random()*4}px;height:${2+Math.random()*4}px;border-radius:50%;background:rgba(255,255,255,${0.3+Math.random()*0.5});filter:blur(1px)`;
         container.appendChild(drop);
       }
-
+      const sw = 20 + Math.random() * 50, sh = 10 + Math.random() * 20;
       const stain = document.createElement('div');
-      const sw = 20 + Math.random() * 50;
-      const sh = 10 + Math.random() * 20;
-      stain.style.cssText = `position:absolute;left:${toX - sw/2}px;top:${toY - sh/2}px;width:${sw}px;height:${sh}px;border-radius:50%;background:radial-gradient(ellipse,rgba(255,255,255,0.2),rgba(255,255,255,0.05) 60%,transparent);filter:blur(3px);transform:rotate(${Math.random() * 360}deg)`;
+      stain.style.cssText = `position:absolute;left:${toX-sw/2}px;top:${toY-sh/2}px;width:${sw}px;height:${sh}px;border-radius:50%;background:radial-gradient(ellipse,rgba(255,255,255,0.2),rgba(255,255,255,0.05) 60%,transparent);filter:blur(3px);transform:rotate(${Math.random()*360}deg)`;
       container.appendChild(stain);
-
       setTimeout(() => {
         const stain2 = stain.cloneNode(true);
         stain2.style.background = 'radial-gradient(ellipse,rgba(255,255,200,0.06),transparent 70%)';
@@ -455,47 +414,36 @@
       }, 3000);
     }
 
+    const colors = ['#5865f2','#ed4245','#faa61a','#23a55a','#eb459e','#f26522','#3e70dd','#80848e'];
+    function getColor(s) { let h = 0; for (let i = 0; i < s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h); return colors[Math.abs(h) % colors.length]; }
+
     function renderMessage(msg) {
       const item = document.createElement('div');
+      item.className = 'message';
       const myMsgId = msgCounter++;
       item.dataset.msgid = myMsgId;
-      item.addEventListener('mousedown', () => {
-        holdTimer = setTimeout(() => {
-          cumshot(item, myMsgId);
-          socket.emit('cumshot', { msgId: myMsgId });
-        }, 500);
-      });
-      item.addEventListener('mouseup', () => { clearTimeout(holdTimer); });
-      item.addEventListener('mouseleave', () => { clearTimeout(holdTimer); });
-      item.addEventListener('touchstart', (e) => {
-        holdTimer = setTimeout(() => {
-          cumshot(item, myMsgId);
-          socket.emit('cumshot', { msgId: myMsgId });
-        }, 500);
-      });
-      item.addEventListener('touchend', (e) => { clearTimeout(holdTimer); });
-      item.addEventListener('touchmove', (e) => { clearTimeout(holdTimer); });
-      if (msg.type === 'system') {
-        item.className = 'system';
-        item.textContent = msg.text;
-      } else {
-        item.className = 'message ' + (msg.user === username ? 'own' : 'other');
-        const time = new Date(msg.time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-        let html = `<div class="msg-user">${escapeHtml(msg.user)}</div><div class="msg-text">${escapeHtml(msg.text || '')}</div>`;
-        if (msg.image) html += `<img src="${msg.image}" class="msg-img" onclick="window.open(this.src)">`;
-        html += `<div class="msg-time">${time}</div>`;
-        item.innerHTML = html;
-      }
+      const time = new Date(msg.time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      const color = getColor(msg.user);
+      item.innerHTML = `<div class="avatar" style="background:${color}">${msg.user.charAt(0).toUpperCase()}</div><div class="body"><div class="msg-header"><span class="msg-user" style="color:${color}">${msg.user}</span><span class="msg-time">${time}</span></div><div class="msg-text">${escapeHtml(msg.text || '')}</div>${msg.image ? `<img src="${msg.image}" class="msg-img" onclick="window.open(this.src)">` : ''}</div>`;
       messages.appendChild(item);
       messages.scrollTop = messages.scrollHeight;
+
+      item.addEventListener('mousedown', () => { holdTimer = setTimeout(() => { cumshot(item, myMsgId); socket.emit('cumshot', { msgId: myMsgId }); }, 500); });
+      item.addEventListener('mouseup', () => { clearTimeout(holdTimer); });
+      item.addEventListener('mouseleave', () => { clearTimeout(holdTimer); });
     }
 
     socket.on('message', (msg) => {
-      const curRoom = rooms.find(r => r.id === room);
-      if (curRoom && curRoom.mediaOnly) {
-        if (msg.image) addVidItem(msg.image, msg.user);
+      if (msg.type === 'system') {
+        const d = document.createElement('div');
+        d.className = 'system';
+        d.textContent = msg.text;
+        messages.appendChild(d);
+        messages.scrollTop = messages.scrollHeight;
         return;
       }
+      const curRoom = rooms.find(r => r.id === room);
+      if (curRoom && curRoom.mediaOnly) { if (msg.image) addVidItem(msg.image, msg.user); return; }
       renderMessage(msg);
     });
 
@@ -517,7 +465,8 @@
     });
 
     socket.on('users-count', (count) => {
-      usersOnline.textContent = count + ' онлайн';
+      usersOnline.textContent = count;
+      memberCount.textContent = count;
     });
 
     function escapeHtml(text) {
@@ -528,302 +477,200 @@
 
     function createMilkSplashes() {
       for (let i = 0; i < 20; i++) {
-        const splash = document.createElement('div');
-        splash.className = 'milk-splash';
-        const size = 40 + Math.random() * 200;
-        splash.style.width = size + 'px';
-        splash.style.height = size * (0.4 + Math.random() * 0.6) + 'px';
-        splash.style.left = Math.random() * 100 + '%';
-        splash.style.top = Math.random() * 100 + '%';
-        splash.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
-        milkLayer.appendChild(splash);
+        const s = document.createElement('div'); s.className = 'milk-splash';
+        const size = 40+Math.random()*200; s.style.width=size+'px'; s.style.height=size*(0.4+Math.random()*0.6)+'px';
+        s.style.left=Math.random()*100+'%'; s.style.top=Math.random()*100+'%'; s.style.transform='rotate('+(Math.random()*360)+'deg)'; milkLayer.appendChild(s);
       }
       for (let i = 0; i < 15; i++) {
-        const stain = document.createElement('div');
-        stain.className = 'milk-stain';
-        const w = 30 + Math.random() * 120;
-        const h = w * (0.3 + Math.random() * 0.7);
-        stain.style.width = w + 'px';
-        stain.style.height = h + 'px';
-        stain.style.left = Math.random() * 100 + '%';
-        stain.style.top = Math.random() * 100 + '%';
-        stain.style.setProperty('--r', Math.random() * 360 + 'deg');
-        milkLayer.appendChild(stain);
+        const s = document.createElement('div'); s.className = 'milk-stain';
+        const w=30+Math.random()*120; s.style.width=w+'px'; s.style.height=w*(0.3+Math.random()*0.7)+'px';
+        s.style.left=Math.random()*100+'%'; s.style.top=Math.random()*100+'%'; s.style.setProperty('--r', Math.random()*360+'deg'); milkLayer.appendChild(s);
       }
       for (let i = 0; i < 8; i++) {
-        const drip = document.createElement('div');
-        drip.className = 'milk-drip';
-        drip.style.left = Math.random() * 100 + '%';
-        drip.style.animationDuration = (3 + Math.random() * 3) + 's';
-        drip.style.animationDelay = (Math.random() * 5) + 's';
-        drip.style.height = (12 + Math.random() * 20) + 'px';
-        milkLayer.appendChild(drip);
+        const d = document.createElement('div'); d.className = 'milk-drip'; d.style.left=Math.random()*100+'%';
+        d.style.animationDuration=(3+Math.random()*3)+'s'; d.style.animationDelay=Math.random()*5+'s'; d.style.height=(12+Math.random()*20)+'px'; milkLayer.appendChild(d);
       }
       for (let i = 0; i < 12; i++) {
-        const drop = document.createElement('div');
-        drop.className = 'milk-drop';
-        drop.style.left = Math.random() * 100 + '%';
-        drop.style.width = drop.style.height = (3 + Math.random() * 5) + 'px';
-        drop.style.animationDuration = (6 + Math.random() * 6) + 's';
-        drop.style.animationDelay = (Math.random() * 8) + 's';
-        milkLayer.appendChild(drop);
+        const d = document.createElement('div'); d.className = 'milk-drop'; d.style.left=Math.random()*100+'%';
+        d.style.width=d.style.height=(3+Math.random()*5)+'px'; d.style.animationDuration=(6+Math.random()*6)+'s'; d.style.animationDelay=Math.random()*8+'s'; milkLayer.appendChild(d);
       }
     }
     createMilkSplashes();
 
     const canvas = document.getElementById('fly-canvas');
     const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
     const dongs = [];
 
     function createDong() {
-      return {
-        x: Math.random() * canvas.width,
-        y: canvas.height + 60,
-        w: 18 + Math.random() * 20,
-        h: 50 + Math.random() * 60,
-        speed: 0.3 + Math.random() * 0.8,
-        swing: Math.random() * Math.PI * 2,
-        swingSpeed: 0.02 + Math.random() * 0.03,
-        color: `hsla(${Math.random() * 30 + 340}, 70%, ${50 + Math.random() * 30}%, 0.7)`,
-        tilt: (Math.random() - 0.5) * 0.6,
-        left: Math.random() > 0.5
-      };
+      return { x: Math.random()*canvas.width, y: canvas.height+60, w: 18+Math.random()*20, h: 50+Math.random()*60,
+        speed: 0.3+Math.random()*0.8, swing: Math.random()*Math.PI*2, swingSpeed: 0.02+Math.random()*0.03,
+        color: `hsla(${Math.random()*30+340},70%,${50+Math.random()*30}%,0.7)`, tilt: (Math.random()-0.5)*0.6, left: Math.random()>0.5 };
     }
-
-    for (let i = 0; i < 14; i++) {
-      const d = createDong();
-      d.y = Math.random() * canvas.height;
-      dongs.push(d);
-    }
+    for (let i = 0; i < 14; i++) { const d = createDong(); d.y = Math.random()*canvas.height; dongs.push(d); }
 
     function drawDong(d) {
-      ctx.save();
-      ctx.translate(d.x, d.y);
-      ctx.rotate(d.tilt + Math.sin(d.swing) * 0.2);
-      if (d.left) ctx.scale(-1, 1);
-      ctx.fillStyle = d.color;
-      ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(-d.w/3, -d.h);
-      ctx.quadraticCurveTo(d.w/2, -d.h, d.w/3, -d.h * 0.6);
-      ctx.quadraticCurveTo(d.w/2, -d.h * 0.4, d.w/3, -d.h * 0.3);
-      ctx.quadraticCurveTo(d.w/2, -d.h * 0.1, d.w/3, 0);
-      ctx.lineTo(-d.w/3, 0);
-      ctx.quadraticCurveTo(-d.w/2, -d.h * 0.1, -d.w/3, -d.h * 0.3);
-      ctx.quadraticCurveTo(-d.w/2, -d.h * 0.4, -d.w/3, -d.h * 0.6);
-      ctx.quadraticCurveTo(-d.w/2, -d.h, -d.w/3, -d.h);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(0, -d.h, d.w/4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = 'rgba(255,255,255,0.15)';
-      ctx.beginPath();
-      ctx.ellipse(-d.w/6, -d.h * 0.5, d.w/8, d.h/6, 0, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(d.tilt+Math.sin(d.swing)*0.2);
+      if (d.left) ctx.scale(-1,1); ctx.fillStyle = d.color; ctx.strokeStyle = 'rgba(0,0,0,0.2)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-d.w/3,-d.h); ctx.quadraticCurveTo(d.w/2,-d.h,d.w/3,-d.h*0.6);
+      ctx.quadraticCurveTo(d.w/2,-d.h*0.4,d.w/3,-d.h*0.3); ctx.quadraticCurveTo(d.w/2,-d.h*0.1,d.w/3,0);
+      ctx.lineTo(-d.w/3,0); ctx.quadraticCurveTo(-d.w/2,-d.h*0.1,-d.w/3,-d.h*0.3);
+      ctx.quadraticCurveTo(-d.w/2,-d.h*0.4,-d.w/3,-d.h*0.6); ctx.quadraticCurveTo(-d.w/2,-d.h,-d.w/3,-d.h);
+      ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.arc(0,-d.h,d.w/4,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='rgba(255,255,255,0.15)'; ctx.beginPath(); ctx.ellipse(-d.w/6,-d.h*0.5,d.w/8,d.h/6,0,0,Math.PI*2); ctx.fill();
       ctx.restore();
     }
-
-    function animate() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      dongs.forEach(d => {
-        d.y -= d.speed;
-        d.swing += d.swingSpeed;
-        if (d.y < -120) {
-          Object.assign(d, createDong());
-          d.y = canvas.height + 60;
-        }
-        drawDong(d);
-      });
-      requestAnimationFrame(animate);
-    }
+    function animate() { ctx.clearRect(0,0,canvas.width,canvas.height); dongs.forEach(d => { d.y-=d.speed; d.swing+=d.swingSpeed; if (d.y<-120) { Object.assign(d,createDong()); d.y=canvas.height+60; } drawDong(d); }); requestAnimationFrame(animate); }
     animate();
+    window.addEventListener('resize', () => { canvas.width=window.innerWidth; canvas.height=window.innerHeight; });
 
-    window.addEventListener('resize', () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    });
+    const nsfwApis = [
+      'https://api.waifu.im/search?is_nsfw=true&gif=true&limit=3',
+      'https://nekobot.xyz/api/image?type=4k',
+      'https://nekobot.xyz/api/image?type=hentai',
+      'https://nekobot.xyz/api/image?type=pgif'
+    ];
+    let nsfwVideos = [];
+    let loadingVideos = false;
 
-    const callBtn = document.getElementById('call-btn');
-    const callNotif = document.getElementById('call-notification');
-    const callNotifText = document.getElementById('call-notif-text');
-    const callJoinBtn = document.getElementById('call-join-btn');
-    const callDeclineBtn = document.getElementById('call-decline-btn');
-
-    let callState = 'idle';
-    let localStream = null;
-    let pc = null;
-    let peerUsername = null;
-    let callTimer = null;
-    let callSeconds = 0;
-    let pendingCandidates = [];
-
-    callBtn.addEventListener('click', async () => {
-      if (callState === 'idle') {
-        try {
-          localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-          callState = 'active';
-          callBtn.textContent = '🔴 Завершить';
-          callBtn.className = 'btn-call active';
-          socket.emit('call-start');
-          startCallTimer();
-        } catch(e) {
-          alert('❌ Нужен доступ к микрофону! Разреши в браузере.');
-        }
-      } else {
-        endCall();
-      }
-    });
-
-    callJoinBtn.addEventListener('click', async () => {
+    async function fetchNSFWContent() {
+      const grid = document.getElementById('videos-grid');
+      const loading = document.getElementById('vid-loading');
+      if (loadingVideos) return;
+      loadingVideos = true;
+      loading.style.display = 'block';
       try {
-        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-      } catch(e) { alert('❌ Нужен доступ к микрофону!'); return; }
-      callNotif.classList.add('hidden');
-      socket.emit('call-join', { callerUsername: peerUsername });
-      initPC(true);
-      callState = 'joined';
-      callBtn.textContent = '🔊 В звонке';
-      callBtn.className = 'btn-call joined';
-      startCallTimer();
-    });
-
-    callDeclineBtn.addEventListener('click', () => {
-      callNotif.classList.add('hidden');
-      peerUsername = null;
-    });
-
-    socket.on('call-started', (data) => {
-      if (data.username === username) return;
-      peerUsername = data.username;
-      callNotifText.textContent = `📞 Звонок от ${data.username}`;
-      callNotif.classList.remove('hidden');
-    });
-
-    socket.on('call-ended', (data) => {
-      if (data && data.username === username) return;
-      callNotif.classList.add('hidden');
-      if (callState !== 'idle') {
-        endCall();
-      }
-    });
-
-    socket.on('call-joined', async (data) => {
-      if (data.username === username) return;
-      if (callState === 'active' && data.callerUsername === username) {
-        peerUsername = data.username;
-        initPC(false);
-      }
-    });
-
-    socket.on('call-signal', async (data) => {
-      if (!pc) {
-        if (data.signal.candidate) {
-          pendingCandidates.push(data.signal);
-        }
-        return;
-      }
-      try {
-        if (data.signal.type === 'offer') {
-          if (pc.signalingState !== 'stable') return;
-          await pc.setRemoteDescription(new RTCSessionDescription(data.signal));
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          socket.emit('call-signal', { signal: answer, toUser: data.fromUser });
-          while (pendingCandidates.length) {
-            await pc.addIceCandidate(new RTCIceCandidate(pendingCandidates.shift())).catch(() => {});
+        const api = nsfwApis[Math.floor(Math.random() * nsfwApis.length)];
+        const res = await fetch(api); const json = await res.json();
+        let images = [];
+        if (json.images) images = json.images.map(i => ({ url: i.url, user: 'waifu.im' }));
+        else if (json.message && json.success) images = [{ url: json.message, user: 'nekobot' }];
+        images.forEach(img => {
+          if (!nsfwVideos.find(v => v.url === img.url)) {
+            nsfwVideos.push(img);
+            const div = document.createElement('div'); div.className = 'vid-item';
+            const isVid = img.url.match(/\.(mp4|webm)$/i);
+            div.innerHTML = isVid ? `<video src="${img.url}" autoplay loop muted></video><div class="vid-user">${img.user}</div>` : `<img src="${img.url}" loading="lazy"><div class="vid-user">${img.user}</div>`;
+            div.addEventListener('click', () => window.open(img.url, '_blank'));
+            grid.appendChild(div);
           }
-        } else if (data.signal.type === 'answer') {
-          if (pc.signalingState !== 'have-local-offer') return;
-          await pc.setRemoteDescription(new RTCSessionDescription(data.signal));
-          while (pendingCandidates.length) {
-            await pc.addIceCandidate(new RTCIceCandidate(pendingCandidates.shift())).catch(() => {});
-          }
-        } else if (data.signal.candidate) {
-          if (pc.remoteDescription) {
-            await pc.addIceCandidate(new RTCIceCandidate(data.signal));
-          } else {
-            pendingCandidates.push(data.signal);
-          }
-        }
+        });
       } catch(e) {}
-    });
-
-    function initPC(isAnswerer) {
-      if (pc) { pc.close(); pc = null; }
-      pendingCandidates = [];
-      pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
-
-      if (localStream) localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-
-      pc.onicecandidate = (e) => {
-        if (e.candidate && peerUsername) {
-          socket.emit('call-signal', { signal: e.candidate, toUser: peerUsername });
-        }
-      };
-
-      pc.oniceconnectionstatechange = () => {
-        if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
-          if (callState !== 'idle') endCall();
-        }
-      };
-
-      pc.ontrack = (e) => {
-        const audio = document.createElement('audio');
-        audio.srcObject = e.streams[0];
-        audio.autoplay = true;
-        audio.volume = 1;
-        audio.style.display = 'none';
-        document.body.appendChild(audio);
-      };
-
-      if (!isAnswerer) {
-        setTimeout(() => {
-          if (pc) {
-            pc.createOffer().then(offer => {
-              return pc.setLocalDescription(offer);
-            }).then(() => {
-              socket.emit('call-signal', { signal: pc.localDescription, toUser: peerUsername });
-            }).catch(() => {});
-          }
-        }, 500);
-      }
+      loading.style.display = 'none';
+      loadingVideos = false;
+      setTimeout(fetchNSFWContent, 15000);
     }
 
-    function endCall() {
-      if (pc) { pc.close(); pc = null; }
-      if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
-      callState = 'idle';
-      peerUsername = null;
-      pendingCandidates = [];
-      callBtn.textContent = '🎤 Звонок';
-      callBtn.className = 'btn-call idle';
-      stopCallTimer();
-      socket.emit('call-end');
-      document.querySelectorAll('audio').forEach(a => a.remove());
-    }
+let callState = 'idle';
+let localStream = null;
+let pc = null;
+let peerUsername = null;
+let callTimer = null;
+let callSeconds = 0;
+let pendingCandidates = [];
 
-    function startCallTimer() {
-      callSeconds = 0;
-      callTimer = setInterval(() => {
-        callSeconds++;
-        const m = String(Math.floor(callSeconds / 60)).padStart(2, '0');
-        const s = String(callSeconds % 60).padStart(2, '0');
-        if (callState === 'active') callBtn.textContent = `🔴 ${m}:${s}`;
-        else if (callState === 'joined') callBtn.textContent = `🔊 ${m}:${s}`;
-      }, 1000);
-    }
+callBtn.addEventListener('click', async () => {
+  if (callState === 'idle') {
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      callState = 'active';
+      callBtn.textContent = '🔴';
+      callBtn.className = 'btn-call active';
+      socket.emit('call-start');
+      startCallTimer();
+    } catch(e) { alert('❌ Нужен доступ к микрофону!'); }
+  } else { endCall(); }
+});
 
-    function stopCallTimer() {
-      clearInterval(callTimer);
-      callTimer = null;
+callJoinBtn.addEventListener('click', async () => {
+  try { localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false }); }
+  catch(e) { alert('❌ Нужен доступ к микрофону!'); return; }
+  callNotif.classList.add('hidden');
+  socket.emit('call-join', { callerUsername: peerUsername });
+  initPC(true);
+  callState = 'joined';
+  callBtn.textContent = '🔊';
+  callBtn.className = 'btn-call joined';
+  startCallTimer();
+});
+
+callDeclineBtn.addEventListener('click', () => { callNotif.classList.add('hidden'); peerUsername = null; });
+
+socket.on('call-started', (data) => {
+  if (data.username === username) return;
+  peerUsername = data.username;
+  callNotifText.textContent = `📞 Звонок от ${data.username}`;
+  callNotif.classList.remove('hidden');
+});
+
+socket.on('call-ended', (data) => {
+  if (data && data.username === username) return;
+  callNotif.classList.add('hidden');
+  if (callState !== 'idle') endCall();
+});
+
+socket.on('call-joined', async (data) => {
+  if (data.username === username) return;
+  if (callState === 'active' && data.callerUsername === username) {
+    peerUsername = data.username;
+    initPC(false);
+  }
+});
+
+socket.on('call-signal', async (data) => {
+  if (!pc) { if (data.signal.candidate) pendingCandidates.push(data.signal); return; }
+  try {
+    if (data.signal.type === 'offer') {
+      if (pc.signalingState !== 'stable') return;
+      await pc.setRemoteDescription(new RTCSessionDescription(data.signal));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      socket.emit('call-signal', { signal: answer, toUser: data.fromUser });
+      while (pendingCandidates.length) await pc.addIceCandidate(new RTCIceCandidate(pendingCandidates.shift())).catch(()=>{});
+    } else if (data.signal.type === 'answer') {
+      if (pc.signalingState !== 'have-local-offer') return;
+      await pc.setRemoteDescription(new RTCSessionDescription(data.signal));
+      while (pendingCandidates.length) await pc.addIceCandidate(new RTCIceCandidate(pendingCandidates.shift())).catch(()=>{});
+    } else if (data.signal.candidate) {
+      if (pc.remoteDescription) await pc.addIceCandidate(new RTCIceCandidate(data.signal));
+      else pendingCandidates.push(data.signal);
     }
+  } catch(e) {}
+});
+
+function initPC(isAnswerer) {
+  if (pc) { pc.close(); pc = null; }
+  pendingCandidates = [];
+  pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+  if (localStream) localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+  pc.onicecandidate = (e) => { if (e.candidate && peerUsername) socket.emit('call-signal', { signal: e.candidate, toUser: peerUsername }); };
+  pc.oniceconnectionstatechange = () => { if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') { if (callState !== 'idle') endCall(); } };
+  pc.ontrack = (e) => { const a = document.createElement('audio'); a.srcObject = e.streams[0]; a.autoplay = true; a.volume = 1; a.style.display = 'none'; document.body.appendChild(a); };
+  if (!isAnswerer) {
+    setTimeout(() => {
+      if (pc) pc.createOffer().then(o => pc.setLocalDescription(o)).then(() => socket.emit('call-signal', { signal: pc.localDescription, toUser: peerUsername })).catch(()=>{});
+    }, 500);
+  }
+}
+
+function endCall() {
+  if (pc) { pc.close(); pc = null; }
+  if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+  callState = 'idle'; peerUsername = null; pendingCandidates = [];
+  callBtn.textContent = '🎤'; callBtn.className = 'btn-call idle';
+  stopCallTimer(); socket.emit('call-end');
+  document.querySelectorAll('audio').forEach(a => a.remove());
+}
+
+function startCallTimer() {
+  callSeconds = 0; callTimer = setInterval(() => { callSeconds++;
+    const m = String(Math.floor(callSeconds/60)).padStart(2,'0');
+    const s = String(callSeconds%60).padStart(2,'0');
+    if (callState === 'active') callBtn.textContent = `🔴 ${m}:${s}`;
+    else if (callState === 'joined') callBtn.textContent = `🔊 ${m}:${s}`;
+  }, 1000);
+}
+function stopCallTimer() { clearInterval(callTimer); callTimer = null; }
   </script>
 </body>
 </html>
