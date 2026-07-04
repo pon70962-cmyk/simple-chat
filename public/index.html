@@ -34,7 +34,8 @@
     .server-icon:hover { border-radius: 14px; background: #5865f2; }
     .server-icon.active { border-radius: 14px; background: #5865f2; }
     .server-icon::before { content: ''; position: absolute; left: -12px; width: 8px; height: 0; background: #fff; border-radius: 0 4px 4px 0; transition: height 0.15s; }
-    .server-icon.active::before, .server-icon:hover::before { height: 20px; }
+    .server-icon.active::before { height: 24px; }
+    .server-icon:hover::before { height: 20px; }
     .server-divider { width: 32px; height: 2px; border-radius: 1px; background: #35373c; margin: 4px 0; }
 
     .sidebar { width: 240px; background: #2b2d31; display: flex; flex-direction: column; flex-shrink: 0; }
@@ -78,18 +79,31 @@
     .member-item:hover { background: #35373c; color: #dbdee1; }
     .member-item .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #23a55a; flex-shrink: 0; }
 
-    #messages { flex: 1; overflow-y: auto; padding: 16px 16px 0; background: #313338; }
-    .message { padding: 4px 16px 4px 0; display: flex; gap: 16px; margin-left: 16px; position: relative; }
-    .message:hover { background: #2e3035; }
-    .message .avatar { width: 40px; height: 40px; border-radius: 50%; background: #5865f2; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; color: #fff; flex-shrink: 0; margin-top: 2px; }
+    .date-divider { display: flex; align-items: center; gap: 16px; padding: 24px 16px 8px; color: #949ba4; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .date-divider::after { content: ''; flex: 1; height: 1px; background: #3f4147; }
+
+    #messages { flex: 1; overflow-y: auto; padding: 8px 0 0; background: #313338; }
+    .message { padding: 2px 16px 2px 0; display: flex; gap: 16px; margin-left: 72px; position: relative; }
+    .message:hover { background: #2e3035; border-radius: 0; }
+    .message:hover .hover-actions { opacity: 1; }
+    .message .avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; color: #fff; flex-shrink: 0; margin-top: 2px; }
+    .message.grouped { margin-left: 72px; padding-left: 0; }
+    .message.grouped .avatar { visibility: hidden; width: 40px; }
+    .message.grouped .body .msg-header { display: none; }
+    .message.grouped .body { margin-top: -2px; }
+    .message.grouped .body .msg-text { padding-left: 56px; }
     .message .body { flex: 1; min-width: 0; }
     .message .body .msg-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
     .message .body .msg-user { font-size: 15px; font-weight: 500; color: #f2f3f5; cursor: pointer; }
     .message .body .msg-user:hover { text-decoration: underline; }
-    .message .body .msg-time { font-size: 11px; color: #949ba4; font-weight: 400; }
+    .message .body .msg-time { font-size: 10px; color: #949ba4; font-weight: 400; margin-left: 4px; cursor: default; }
+    .message .body .msg-time:hover { color: #dbdee1; }
     .message .body .msg-text { font-size: 15px; line-height: 1.4; color: #dbdee1; }
-    .message .body .msg-img { max-width: 400px; max-height: 300px; border-radius: 8px; margin-top: 8px; cursor: pointer; }
-    .system { text-align: center; color: #949ba4; font-size: 13px; padding: 8px 0; }
+    .message .body .msg-img { max-width: 400px; max-height: 300px; border-radius: 8px; margin-top: 4px; cursor: pointer; }
+    .hover-actions { position: absolute; right: 8px; top: -12px; display: flex; background: #2b2d31; border: 1px solid #3f4147; border-radius: 4px; opacity: 0; transition: opacity 0.08s; z-index: 2; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+    .hover-actions button { background: transparent; border: none; color: #b5bac1; padding: 4px 6px; cursor: pointer; font-size: 14px; border-radius: 2px; display: flex; align-items: center; }
+    .hover-actions button:hover { background: #35373c; color: #dbdee1; }
+    .system { text-align: center; color: #949ba4; font-size: 13px; padding: 8px 16px; }
 
     .input-area { background: #313338; padding: 0 16px 20px; flex-shrink: 0; }
     .input-wrapper { background: #383a40; border-radius: 8px; padding: 0 12px; display: flex; align-items: center; gap: 8px; border: 1px solid #1e1f22; }
@@ -273,6 +287,8 @@
               }
             } else {
               messages.innerHTML = '';
+              lastUser = '';
+              lastDate = '';
               messages.style.display = 'block';
               document.getElementById('videos-grid-wrapper').style.display = 'none';
               input.style.display = 'block';
@@ -291,12 +307,16 @@
 
     const serverIcons = ['💬', '🔞', '🔥', '🎬', '🎲'];
     rooms.forEach((r, i) => {
-      const div = document.createElement('div');
-      div.className = 'server-icon' + (r.id === room ? ' active' : '');
-      div.textContent = serverIcons[i];
-      div.title = r.name;
-      div.addEventListener('click', () => div.click());
-      serverBar.appendChild(div);
+      const d = document.createElement('div');
+      d.className = 'server-icon' + (r.id === room ? ' active' : '');
+      d.textContent = serverIcons[i];
+      d.title = r.name;
+      d.addEventListener('click', () => {
+        const targetRoom = rooms[i];
+        const el = document.querySelector(`.room-item:nth-child(${i+1})`);
+        if (el && username) el.click();
+      });
+      serverBar.appendChild(d);
     });
     const divd = document.createElement('div');
     divd.className = 'server-divider';
@@ -417,14 +437,47 @@
     const colors = ['#5865f2','#ed4245','#faa61a','#23a55a','#eb459e','#f26522','#3e70dd','#80848e'];
     function getColor(s) { let h = 0; for (let i = 0; i < s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h); return colors[Math.abs(h) % colors.length]; }
 
+    let lastUser = '';
+    let lastDate = '';
+
     function renderMessage(msg) {
+      const msgDate = new Date(msg.time);
+      const dateKey = msgDate.toLocaleDateString('ru-RU');
+      const time = msgDate.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+      if (dateKey !== lastDate) {
+        lastUser = '';
+        lastDate = dateKey;
+        const div = document.createElement('div');
+        div.className = 'date-divider';
+        const today = new Date(); const yesterday = new Date(today); yesterday.setDate(yesterday.getDate()-1);
+        let label = dateKey;
+        if (dateKey === today.toLocaleDateString('ru-RU')) label = 'Сегодня';
+        else if (dateKey === yesterday.toLocaleDateString('ru-RU')) label = 'Вчера';
+        div.textContent = label;
+        messages.appendChild(div);
+      }
+
+      const grouped = msg.user === lastUser;
+      lastUser = msg.user;
+
       const item = document.createElement('div');
-      item.className = 'message';
+      item.className = 'message' + (grouped ? ' grouped' : '');
       const myMsgId = msgCounter++;
       item.dataset.msgid = myMsgId;
-      const time = new Date(msg.time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
       const color = getColor(msg.user);
-      item.innerHTML = `<div class="avatar" style="background:${color}">${msg.user.charAt(0).toUpperCase()}</div><div class="body"><div class="msg-header"><span class="msg-user" style="color:${color}">${msg.user}</span><span class="msg-time">${time}</span></div><div class="msg-text">${escapeHtml(msg.text || '')}</div>${msg.image ? `<img src="${msg.image}" class="msg-img" onclick="window.open(this.src)">` : ''}</div>`;
+
+      if (grouped) {
+        item.innerHTML = `<div class="avatar" style="background:${color};visibility:hidden"></div><div class="body"><div class="msg-header" style="display:none"></div><div class="msg-text">${escapeHtml(msg.text || '')}</div>${msg.image ? `<img src="${msg.image}" class="msg-img" onclick="window.open(this.src)">` : ''}</div>`;
+      } else {
+        item.innerHTML = `<div class="avatar" style="background:${color}">${msg.user.charAt(0).toUpperCase()}</div><div class="body"><div class="msg-header"><span class="msg-user" style="color:${color}">${msg.user}</span><span class="msg-time">${time}</span></div><div class="msg-text">${escapeHtml(msg.text || '')}</div>${msg.image ? `<img src="${msg.image}" class="msg-img" onclick="window.open(this.src)">` : ''}</div>`;
+      }
+
+      const actions = document.createElement('div');
+      actions.className = 'hover-actions';
+      actions.innerHTML = '<button title="Ответить">💬</button><button title="Реакция">😊</button><button title="Ещё">⋯</button>';
+      item.appendChild(actions);
+
       messages.appendChild(item);
       messages.scrollTop = messages.scrollHeight;
 
