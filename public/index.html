@@ -261,7 +261,16 @@
     const auth = document.getElementById('auth');
     const authLogin = document.getElementById('auth-login');
     const authReg = document.getElementById('auth-reg');
-    (['login-user','login-pass','login-btn','login-err','reg-user','reg-pass','reg-btn','reg-err','show-reg','show-login']).forEach(id => window[id]=document.getElementById(id));
+    const loginUser = document.getElementById('login-user');
+    const loginPass = document.getElementById('login-pass');
+    const loginBtn = document.getElementById('login-btn');
+    const loginErr = document.getElementById('login-err');
+    const regUser = document.getElementById('reg-user');
+    const regPass = document.getElementById('reg-pass');
+    const regBtn = document.getElementById('reg-btn');
+    const regErr = document.getElementById('reg-err');
+    const showReg = document.getElementById('show-reg');
+    const showLogin = document.getElementById('show-login');
     showReg.onclick = () => { authLogin.classList.add('hidden'); authReg.classList.remove('hidden'); regUser.focus(); };
     showLogin.onclick = () => { authReg.classList.add('hidden'); authLogin.classList.remove('hidden'); loginUser.focus(); };
     loginBtn.onclick = doLogin;
