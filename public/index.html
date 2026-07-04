@@ -5,70 +5,134 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Chat</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #1a1a1a; height: 100vh; display: flex; flex-direction: column; }
+    :root { --bg: #1a1a2e; --surface: #16213e; --sidebar: #0f3460; --text: #e0e0e0; --text2: #a0a0a0; --accent: #e94560; --msg-own: #e94560; --msg-other: #1a1a3e; --border: #2a2a4a; --input-bg: #1a1a3e; --hover: #2a2a4a; --shadow: rgba(0,0,0,0.3); --radius: 12px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    .theme-light { --bg: #f5f5f5; --surface: #ffffff; --sidebar: #f0f0f0; --text: #1a1a1a; --text2: #666; --accent: #007aff; --msg-own: #007aff; --msg-other: #ffffff; --border: #e0e0e0; --input-bg: #f0f0f0; --hover: #e8e8e8; --shadow: rgba(0,0,0,0.08); }
+    .theme-blue { --bg: #0a1929; --surface: #0d2137; --sidebar: #0d2137; --accent: #3399ff; --msg-own: #3399ff; --msg-other: #0d2137; --border: #1a3a5a; --input-bg: #0d2137; --hover: #1a3a5a; }
+    .theme-purple { --bg: #1a0a2e; --surface: #2d1a4e; --sidebar: #2d1a4e; --accent: #a855f7; --msg-own: #a855f7; --msg-other: #2d1a4e; --border: #3a2a5a; --input-bg: #2d1a4e; --hover: #3a2a5a; }
+    .theme-green { --bg: #0a1a0a; --surface: #0d2d0d; --sidebar: #0d2d0d; --accent: #22c55e; --msg-own: #22c55e; --msg-other: #0d2d0d; --border: #1a4a1a; --input-bg: #0d2d0d; --hover: #1a4a1a; }
 
-    .auth { position: fixed; inset: 0; background: #fff; display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; transition: background 0.2s, color 0.2s; }
+
+    .auth { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 1000; }
     .auth-box { width: 340px; padding: 32px; }
     .auth-box h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
-    .auth-box p { color: #666; font-size: 14px; margin-bottom: 24px; }
-    .auth-box input { width: 100%; padding: 12px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; margin-bottom: 10px; outline: none; font-family: inherit; }
-    .auth-box input:focus { border-color: #007aff; }
-    .auth-box .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
-    .auth-box .btn-primary { background: #007aff; color: #fff; }
-    .auth-box .btn-primary:hover { background: #0062cc; }
-    .auth-box .link { color: #007aff; font-size: 14px; cursor: pointer; margin-top: 12px; display: inline-block; }
+    .auth-box p { color: var(--text2); font-size: 14px; margin-bottom: 24px; }
+    .auth-box input { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; margin-bottom: 10px; outline: none; font-family: inherit; background: var(--input-bg); color: var(--text); }
+    .auth-box input:focus { border-color: var(--accent); }
+    .auth-box .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; transition: 0.15s; }
+    .auth-box .btn-primary { background: var(--accent); color: #fff; }
+    .auth-box .btn-primary:hover { opacity: 0.9; }
+    .auth-box .link { color: var(--accent); font-size: 14px; cursor: pointer; margin-top: 12px; display: inline-block; }
     .auth-box .link:hover { text-decoration: underline; }
     .auth-box .err { color: #ff3b30; font-size: 13px; margin-top: 8px; }
 
     .layout { display: flex; flex: 1; min-height: 0; }
-    .sidebar { width: 280px; background: #fff; border-right: 1px solid #e5e5e5; display: flex; flex-direction: column; flex-shrink: 0; }
-    .sidebar-header { padding: 16px 16px 12px; font-size: 18px; font-weight: 700; border-bottom: 1px solid #e5e5e5; display: flex; align-items: center; justify-content: space-between; }
-    .sidebar-header .online { font-size: 12px; font-weight: 400; color: #666; }
-    .search-box { padding: 8px 12px; }
-    .search-box input { width: 100%; padding: 8px 12px; border: none; background: #f0f0f0; border-radius: 8px; font-size: 14px; outline: none; font-family: inherit; }
-    .dm-list { flex: 1; overflow-y: auto; }
-    .dm-item { padding: 10px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: 0.1s; }
-    .dm-item:hover { background: #f0f0f0; }
-    .dm-item.active { background: #e8f0fe; }
-    .dm-item .avatar { width: 36px; height: 36px; border-radius: 50%; background: #007aff; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; flex-shrink: 0; }
-    .dm-item .info { flex: 1; min-width: 0; }
-    .dm-item .info .name { font-size: 15px; font-weight: 500; }
-    .dm-item .info .preview { font-size: 13px; color: #999; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .dm-item .dot { width: 8px; height: 8px; border-radius: 50%; background: #34c759; flex-shrink: 0; }
+    .sidebar { width: 280px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; transition: background 0.2s; }
+    .sidebar-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .sidebar-header .logo { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .sidebar-header .logo svg { width: 22px; height: 22px; }
+    .tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .tab { flex: 1; padding: 10px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text2); cursor: pointer; transition: 0.1s; border-bottom: 2px solid transparent; }
+    .tab:hover { color: var(--text); background: var(--hover); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .search-box { padding: 8px 12px; flex-shrink: 0; }
+    .search-box input { width: 100%; padding: 8px 12px; border: none; background: var(--input-bg); border-radius: 8px; font-size: 13px; outline: none; font-family: inherit; color: var(--text); }
+    .search-box input::placeholder { color: var(--text2); }
+    .list { flex: 1; overflow-y: auto; }
 
-    .main { flex: 1; display: flex; flex-direction: column; background: #fff; min-width: 0; }
-    .chat-header { padding: 12px 20px; border-bottom: 1px solid #e5e5e5; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-    .chat-header .avatar { width: 34px; height: 34px; border-radius: 50%; background: #007aff; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; flex-shrink: 0; }
-    .chat-header .info .name { font-size: 16px; font-weight: 600; }
-    .chat-header .info .status { font-size: 12px; color: #34c759; }
+    .item { padding: 10px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: 0.1s; }
+    .item:hover { background: var(--hover); }
+    .item.active { background: var(--hover); border-left: 3px solid var(--accent); }
+    .item .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; flex-shrink: 0; color: #fff; }
+    .item .info { flex: 1; min-width: 0; }
+    .item .info .name { font-size: 14px; font-weight: 500; }
+    .item .info .preview { font-size: 12px; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .item .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .item .actions { display: flex; gap: 4px; flex-shrink: 0; }
+    .item .actions button { width: 28px; height: 28px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.1s; font-size: 13px; background: transparent; }
+    .item .actions button:hover { background: var(--hover); }
+    .item .actions .accept { color: #22c55e; }
+    .item .actions .decline { color: #ef4444; }
+    .item .actions .remove { color: var(--text2); }
+    .item .actions .add { color: var(--accent); }
+    .badge { font-size: 10px; background: var(--accent); color: #fff; padding: 1px 6px; border-radius: 8px; margin-left: auto; font-weight: 700; }
 
-    #msgs { flex: 1; overflow-y: auto; padding: 16px 20px; background: #fafafa; }
+    .main { flex: 1; display: flex; flex-direction: column; background: var(--surface); min-width: 0; transition: background 0.2s; }
+    .chat-header { padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+    .chat-header .avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; flex-shrink: 0; color: #fff; }
+    .chat-header .info .name { font-size: 15px; font-weight: 600; }
+    .chat-header .info .status { font-size: 11px; color: var(--text2); }
+    .chat-header .actions { display: flex; gap: 6px; margin-left: auto; }
+    .chat-header .actions button { width: 34px; height: 34px; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.1s; background: transparent; color: var(--text2); }
+    .chat-header .actions button:hover { background: var(--hover); color: var(--text); }
+    .chat-header .actions button.call-active { color: var(--accent); background: rgba(233,69,96,0.15); }
+
+    #msgs { flex: 1; overflow-y: auto; padding: 16px 20px; background: var(--bg); }
     .msg { margin-bottom: 14px; max-width: 70%; }
     .msg.own { margin-left: auto; }
-    .msg.own .bubble { background: #007aff; color: #fff; border-bottom-right-radius: 4px; }
-    .msg .bubble { background: #fff; padding: 10px 14px; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); word-wrap: break-word; border-bottom-left-radius: 4px; }
+    .msg.own .bubble { background: var(--msg-own); color: #fff; border-bottom-right-radius: 4px; }
+    .msg .bubble { background: var(--msg-other); padding: 10px 14px; border-radius: var(--radius); box-shadow: 0 1px 2px var(--shadow); word-wrap: break-word; border-bottom-left-radius: 4px; }
     .msg .bubble .text { font-size: 15px; line-height: 1.4; }
     .msg .bubble .file { display: block; max-width: 280px; max-height: 280px; border-radius: 8px; margin-top: 4px; cursor: pointer; }
-    .msg .meta { font-size: 11px; color: #999; margin-top: 4px; padding: 0 4px; }
+    .msg .meta { font-size: 11px; color: var(--text2); margin-top: 4px; padding: 0 4px; }
     .msg.own .meta { text-align: right; }
-    .msg .bubble .file-link { display: inline-flex; align-items: center; gap: 6px; background: #f0f0f0; padding: 6px 12px; border-radius: 6px; font-size: 13px; color: #007aff; text-decoration: none; margin-top: 4px; }
-    .sys { text-align: center; color: #999; font-size: 12px; padding: 8px 0; }
+    .bubble .file-link { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 6px; font-size: 13px; color: var(--accent); text-decoration: none; margin-top: 4px; }
+    .sys { text-align: center; color: var(--text2); font-size: 12px; padding: 8px 0; }
 
-    .input-area { padding: 12px 16px; border-top: 1px solid #e5e5e5; background: #fff; flex-shrink: 0; }
-    .input-row { display: flex; gap: 8px; align-items: flex-end; }
-    .input-row input[type="text"] { flex: 1; padding: 10px 14px; border: 1px solid #ddd; border-radius: 20px; font-size: 15px; outline: none; font-family: inherit; }
-    .input-row input[type="text"]:focus { border-color: #007aff; }
-    .input-row button { padding: 10px 18px; border: none; border-radius: 20px; background: #007aff; color: #fff; font-size: 15px; cursor: pointer; font-weight: 600; font-family: inherit; white-space: nowrap; }
-    .input-row button:hover { background: #0062cc; }
-    .input-row .file-btn { background: transparent; color: #666; font-size: 20px; padding: 8px 12px; cursor: pointer; border: none; border-radius: 50%; }
-    .input-row .file-btn:hover { background: #f0f0f0; }
+    .input-area { padding: 12px 16px; border-top: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
+    .input-row { display: flex; gap: 8px; align-items: center; }
+    .input-row input[type="text"] { flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 20px; font-size: 15px; outline: none; font-family: inherit; background: var(--input-bg); color: var(--text); }
+    .input-row input[type="text"]:focus { border-color: var(--accent); }
+    .input-row .btn { padding: 10px 18px; border: none; border-radius: 20px; background: var(--accent); color: #fff; font-size: 14px; cursor: pointer; font-weight: 600; font-family: inherit; white-space: nowrap; transition: 0.15s; }
+    .input-row .btn:hover { opacity: 0.9; }
+    .input-row .icon-btn { background: transparent; color: var(--text2); font-size: 18px; padding: 8px; cursor: pointer; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .input-row .icon-btn:hover { background: var(--hover); color: var(--text); }
+    .input-row .icon-btn svg { width: 20px; height: 20px; }
 
     .hidden { display: none !important; }
 
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* Call UI */
+    .call-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 999; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 24px; }
+    .call-overlay.show { display: flex; }
+    .call-avatar { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; color: #fff; }
+    .call-name { font-size: 22px; font-weight: 600; color: #fff; }
+    .call-status { font-size: 14px; color: #aaa; }
+    .call-actions { display: flex; gap: 20px; }
+    .call-actions button { width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.15s; }
+    .call-actions button svg { width: 24px; height: 24px; }
+    .call-actions .end-call { background: #ef4444; color: #fff; }
+    .call-actions .end-call:hover { background: #dc2626; }
+    .call-actions .toggle-mic { background: rgba(255,255,255,0.15); color: #fff; }
+    .call-actions .toggle-mic:hover { background: rgba(255,255,255,0.25); }
+    .call-actions .toggle-mic.muted { background: var(--accent); }
+    .call-actions .toggle-screen { background: rgba(255,255,255,0.15); color: #fff; }
+    .call-actions .toggle-screen:hover { background: rgba(255,255,255,0.25); }
+    .call-actions .toggle-screen.active { background: #22c55e; }
+
+    /* Settings */
+    .settings-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 998; display: none; align-items: center; justify-content: center; }
+    .settings-overlay.show { display: flex; }
+    .settings-box { background: var(--surface); border-radius: var(--radius); padding: 24px; width: 380px; max-width: 90%; max-height: 80vh; overflow-y: auto; border: 1px solid var(--border); }
+    .settings-box h2 { font-size: 18px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .settings-box h2 .close { margin-left: auto; cursor: pointer; color: var(--text2); font-size: 20px; background: none; border: none; }
+    .theme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+    .theme-opt { padding: 12px; border-radius: 8px; text-align: center; cursor: pointer; border: 2px solid var(--border); transition: 0.1s; font-size: 13px; font-weight: 500; }
+    .theme-opt:hover { border-color: var(--accent); }
+    .theme-opt.active { border-color: var(--accent); background: rgba(233,69,96,0.1); }
+    .theme-opt .preview { width: 100%; height: 30px; border-radius: 4px; margin-bottom: 6px; }
+    .custom-theme-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+    .custom-theme-row label { font-size: 12px; color: var(--text2); }
+    .custom-theme-row input[type="color"] { width: 36px; height: 36px; border: none; border-radius: 4px; cursor: pointer; background: none; padding: 0; }
+    .custom-theme-row input[type="text"] { flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; background: var(--input-bg); color: var(--text); outline: none; font-family: monospace; }
+    .settings-section { margin-top: 16px; }
+    .settings-section h3 { font-size: 14px; color: var(--text2); margin-bottom: 8px; }
+
+    svg { fill: currentColor; }
   </style>
 </head>
 <body>
@@ -94,30 +158,88 @@
     </div>
   </div>
 
+  <div class="call-overlay" id="call-overlay">
+    <div class="call-avatar" id="call-avatar" style="background:var(--accent)">?</div>
+    <div class="call-name" id="call-name">—</div>
+    <div class="call-status" id="call-status">Соединение...</div>
+    <div class="call-actions">
+      <button class="toggle-mic" id="call-mic" title="Микрофон">
+        <svg viewBox="0 0 24 24"><path d="M12 14a4 4 0 0 0 4-4V6a4 4 0 1 0-8 0v4a4 4 0 0 0 4 4z"/><path d="M19 10a7 7 0 0 1-14 0"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </button>
+      <button class="toggle-screen" id="call-screen" title="Демонстрация">
+        <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </button>
+      <button class="end-call" id="call-end" title="Завершить">
+        <svg viewBox="0 0 24 24"><path d="M22 16.92v3a1.5 1.5 0 0 1-1.5 1.5A18.5 18.5 0 0 1 2 3.5 1.5 1.5 0 0 1 3.5 2h3a1.5 1.5 0 0 1 1.5 1.5c0 1.2.2 2.4.6 3.5a1.5 1.5 0 0 1-.3 1.6L7.1 9.7a13 13 0 0 0 5.2 5.2l1.1-1.2a1.5 1.5 0 0 1 1.6-.3c1.1.4 2.3.6 3.5.6a1.5 1.5 0 0 1 1.5 1.5z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="settings-overlay" id="settings-overlay">
+    <div class="settings-box">
+      <h2>⚙️ Настройки <button class="close" id="settings-close">✕</button></h2>
+      <div class="settings-section">
+        <h3>Тема оформления</h3>
+        <div class="theme-grid" id="theme-grid"></div>
+      </div>
+      <div class="settings-section">
+        <h3>Своя тема</h3>
+        <div class="custom-theme-row">
+          <label>Фон</label><input type="color" id="cust-bg" value="#1a1a2e">
+          <label>Акцент</label><input type="color" id="cust-accent" value="#e94560">
+          <label>Поверхность</label><input type="color" id="cust-surface" value="#16213e">
+        </div>
+        <div class="custom-theme-row">
+          <label>Текст</label><input type="color" id="cust-text" value="#e0e0e0">
+          <label>Боковая</label><input type="color" id="cust-sidebar" value="#0f3460">
+          <button class="btn btn-primary" id="cust-apply" style="padding:6px 14px;font-size:12px;border-radius:6px;width:auto">Применить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="layout">
     <div class="sidebar">
       <div class="sidebar-header">
-        <span>Chat</span>
-        <span class="online" id="online-count">—</span>
+        <div class="logo">
+          <svg viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6l2 3 2-3h6a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/><path d="M8 9h8"/><path d="M12 13V5"/></svg>
+          Chat
+        </div>
+        <button id="settings-btn" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:18px;padding:4px">⚙️</button>
+      </div>
+      <div class="tabs">
+        <div class="tab active" data-tab="all">Все</div>
+        <div class="tab" data-tab="friends">Друзья</div>
+        <div class="tab" data-tab="pending">Заявки</div>
       </div>
       <div class="search-box"><input id="search" placeholder="Поиск..."></div>
-      <div class="dm-list" id="dm-list"></div>
+      <div class="list" id="list"></div>
     </div>
 
     <div class="main">
-      <div class="chat-header" id="chat-header">
+      <div class="chat-header">
         <div class="avatar" id="chat-avatar">G</div>
         <div class="info">
           <div class="name" id="chat-name">Общий чат</div>
           <div class="status" id="chat-status">онлайн</div>
         </div>
+        <div class="actions">
+          <button id="call-btn" title="Звонок">
+            <svg viewBox="0 0 24 24"><path d="M22 16.92v3a1.5 1.5 0 0 1-1.5 1.5A18.5 18.5 0 0 1 2 3.5 1.5 1.5 0 0 1 3.5 2h3a1.5 1.5 0 0 1 1.5 1.5c0 1.2.2 2.4.6 3.5a1.5 1.5 0 0 1-.3 1.6L7.1 9.7a13 13 0 0 0 5.2 5.2l1.1-1.2a1.5 1.5 0 0 1 1.6-.3c1.1.4 2.3.6 3.5.6a1.5 1.5 0 0 1 1.5 1.5z"/></svg>
+          </button>
+          <button id="add-friend-btn" title="Добавить в друзья">
+            <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+          </button>
+        </div>
       </div>
       <div id="msgs"></div>
       <div class="input-area">
         <div class="input-row">
-          <button class="file-btn" id="file-btn">📎</button>
+          <button class="icon-btn" id="file-btn" title="Прикрепить">
+            <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          </button>
           <input type="text" id="input" placeholder="Сообщение..." autofocus>
-          <button id="send-btn">Отправить</button>
+          <button class="btn" id="send-btn">Отправить</button>
         </div>
       </div>
     </div>
@@ -131,62 +253,32 @@
     let username = '';
     let currentRoom = 'general';
     let currentDm = null;
+    let currentTab = 'all';
+    let userData = null;
+    let allUsers = [];
 
+    // Auth
     const auth = document.getElementById('auth');
     const authLogin = document.getElementById('auth-login');
     const authReg = document.getElementById('auth-reg');
-    const loginUser = document.getElementById('login-user');
-    const loginPass = document.getElementById('login-pass');
-    const loginBtn = document.getElementById('login-btn');
-    const loginErr = document.getElementById('login-err');
-    const regUser = document.getElementById('reg-user');
-    const regPass = document.getElementById('reg-pass');
-    const regBtn = document.getElementById('reg-btn');
-    const regErr = document.getElementById('reg-err');
-    const showReg = document.getElementById('show-reg');
-    const showLogin = document.getElementById('show-login');
-    const dmList = document.getElementById('dm-list');
-    const search = document.getElementById('search');
-    const msgs = document.getElementById('msgs');
-    const input = document.getElementById('input');
-    const sendBtn = document.getElementById('send-btn');
-    const fileBtn = document.getElementById('file-btn');
-    const fileInput = document.getElementById('file-input');
-    const onlineCount = document.getElementById('online-count');
-    const chatName = document.getElementById('chat-name');
-    const chatStatus = document.getElementById('chat-status');
-    const chatAvatar = document.getElementById('chat-avatar');
-
-    let users = [];
-    let dmCache = {};
-
-    function getAvatar(name) { return name ? name.charAt(0).toUpperCase() : '?'; }
-
-    function getColor(s) {
-      const colors = ['#007aff','#ff3b30','#34c759','#ff9500','#af52de','#5ac8fa','#ff2d55','#5856d6'];
-      let h = 0; for (let i = 0; i < s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h);
-      return colors[Math.abs(h) % colors.length];
-    }
-
-    showReg.addEventListener('click', () => { authLogin.classList.add('hidden'); authReg.classList.remove('hidden'); regUser.focus(); });
-    showLogin.addEventListener('click', () => { authReg.classList.add('hidden'); authLogin.classList.remove('hidden'); loginUser.focus(); });
-
-    loginBtn.addEventListener('click', doLogin);
-    loginPass.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-    regBtn.addEventListener('click', doReg);
-    regPass.addEventListener('keydown', e => { if (e.key === 'Enter') doReg(); });
+    (['login-user','login-pass','login-btn','login-err','reg-user','reg-pass','reg-btn','reg-err','show-reg','show-login']).forEach(id => window[id]=document.getElementById(id));
+    showReg.onclick = () => { authLogin.classList.add('hidden'); authReg.classList.remove('hidden'); regUser.focus(); };
+    showLogin.onclick = () => { authReg.classList.add('hidden'); authLogin.classList.remove('hidden'); loginUser.focus(); };
+    loginBtn.onclick = doLogin;
+    loginPass.onkeydown = e => { if (e.key === 'Enter') doLogin(); };
+    regBtn.onclick = doReg;
+    regPass.onkeydown = e => { if (e.key === 'Enter') doReg(); };
 
     function doLogin() {
-      const user = loginUser.value.trim(); const pass = loginPass.value.trim();
+      const user = loginUser.value.trim(), pass = loginPass.value.trim();
       if (!user || !pass) { loginErr.textContent = 'Заполните все поля'; return; }
       socket.emit('login', { user, pass }, (res) => {
-        if (res.ok) { loginErr.textContent = ''; enter(user); }
+        if (res.ok) { loginErr.textContent = ''; userData = res.data; applyTheme(userData.theme || 'dark'); enter(user); }
         else loginErr.textContent = res.err;
       });
     }
-
     function doReg() {
-      const user = regUser.value.trim(); const pass = regPass.value.trim();
+      const user = regUser.value.trim(), pass = regPass.value.trim();
       if (!user || !pass) { regErr.textContent = 'Заполните все поля'; return; }
       socket.emit('register', { user, pass }, (res) => {
         if (res.ok) { regErr.textContent = ''; authLogin.classList.remove('hidden'); authReg.classList.add('hidden'); loginUser.value = user; loginPass.value = pass; doLogin(); }
@@ -194,56 +286,171 @@
       });
     }
 
+    // Theme
+    const themes = {
+      dark: { bg:'#1a1a2e', surface:'#16213e', sidebar:'#0f3460', accent:'#e94560', text:'#e0e0e0' },
+      light: { bg:'#f5f5f5', surface:'#fff', sidebar:'#f0f0f0', accent:'#007aff', text:'#1a1a1a' },
+      blue: { bg:'#0a1929', surface:'#0d2137', sidebar:'#0d2137', accent:'#3399ff', text:'#e0e0e0' },
+      purple: { bg:'#1a0a2e', surface:'#2d1a4e', sidebar:'#2d1a4e', accent:'#a855f7', text:'#e0e0e0' },
+      green: { bg:'#0a1a0a', surface:'#0d2d0d', sidebar:'#0d2d0d', accent:'#22c55e', text:'#e0e0e0' }
+    };
+    let currentTheme = 'dark';
+
+    function applyTheme(name) {
+      currentTheme = name;
+      const t = name === 'custom' ? getCustomTheme() : themes[name];
+      if (!t) return;
+      document.documentElement.style.setProperty('--bg', t.bg);
+      document.documentElement.style.setProperty('--surface', t.surface);
+      document.documentElement.style.setProperty('--sidebar', t.sidebar);
+      document.documentElement.style.setProperty('--accent', t.accent);
+      document.documentElement.style.setProperty('--text', t.text);
+      document.documentElement.style.setProperty('--text2', adjustColor(t.text, -60));
+      document.documentElement.style.setProperty('--msg-own', t.accent);
+      document.documentElement.style.setProperty('--border', adjustColor(t.surface, 30));
+      document.documentElement.style.setProperty('--input-bg', adjustColor(t.surface, -10));
+      document.documentElement.style.setProperty('--hover', adjustColor(t.surface, 20));
+      document.documentElement.style.setProperty('--msg-other', t.surface);
+      if (username) socket.emit('save-theme', name);
+      renderThemeGrid();
+    }
+
+    function adjustColor(hex, amt) {
+      let c = hex.replace('#','');
+      if (c.length === 3) c = c[0]+c[0]+c[1]+c[1]+c[2]+c[2];
+      let num = parseInt(c, 16);
+      let r = Math.min(255,Math.max(0,(num>>16)+amt));
+      let g = Math.min(255,Math.max(0,((num>>8)&0x00FF)+amt));
+      let b = Math.min(255,Math.max(0,(num&0x0000FF)+amt));
+      return '#'+((r<<16)|(g<<8)|b).toString(16).padStart(6,'0');
+    }
+
+    function getCustomTheme() {
+      return { bg: document.getElementById('cust-bg').value, surface: document.getElementById('cust-surface').value, sidebar: document.getElementById('cust-sidebar').value, accent: document.getElementById('cust-accent').value, text: document.getElementById('cust-text').value };
+    }
+
+    function renderThemeGrid() {
+      const grid = document.getElementById('theme-grid'); grid.innerHTML = '';
+      Object.keys(themes).forEach(name => {
+        const t = themes[name]; const div = document.createElement('div');
+        div.className = 'theme-opt' + (currentTheme === name ? ' active' : '');
+        div.innerHTML = `<div class="preview" style="background:linear-gradient(135deg,${t.bg},${t.accent})"></div>${name.charAt(0).toUpperCase()+name.slice(1)}`;
+        div.onclick = () => applyTheme(name);
+        grid.appendChild(div);
+      });
+      const cust = document.createElement('div');
+      cust.className = 'theme-opt' + (currentTheme === 'custom' ? ' active' : '');
+      cust.innerHTML = '<div class="preview" style="background:linear-gradient(135deg,#333,#e94560)"></div>Своя';
+      cust.onclick = () => applyTheme('custom');
+      grid.appendChild(cust);
+    }
+
+    document.getElementById('cust-apply').onclick = () => applyTheme('custom');
+    document.getElementById('settings-btn').onclick = () => { document.getElementById('settings-overlay').classList.add('show'); renderThemeGrid(); };
+    document.getElementById('settings-close').onclick = () => document.getElementById('settings-overlay').classList.remove('show');
+
+    // Tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.onclick = () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentTab = tab.dataset.tab;
+        renderList();
+      };
+    });
+
+    // Lists
+    const search = document.getElementById('search');
+    const list = document.getElementById('list');
+    const msgs = document.getElementById('msgs');
+    const input = document.getElementById('input');
+    const sendBtn = document.getElementById('send-btn');
+    const fileBtn = document.getElementById('file-btn');
+    const fileInput = document.getElementById('file-input');
+    const chatName = document.getElementById('chat-name');
+    const chatStatus = document.getElementById('chat-status');
+    const chatAvatar = document.getElementById('chat-avatar');
+    const callBtn = document.getElementById('call-btn');
+    const addFriendBtn = document.getElementById('add-friend-btn');
+
+    const colors = ['#007aff','#ff3b30','#34c759','#ff9500','#af52de','#5ac8fa','#ff2d55','#5856d6'];
+    function getColor(s) { let h=0; for(let i=0;i<s.length;i++) h=s.charCodeAt(i)+((h<<5)-h); return colors[Math.abs(h)%colors.length]; }
+    function getAvatar(n) { return n ? n.charAt(0).toUpperCase() : '?'; }
+    function escapeHtml(t) { const d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
+
     function enter(user) {
       username = user;
       auth.classList.add('hidden');
       socket.emit('join', { username: user, room: 'general' });
-      renderDmList();
+      socket.emit('get-all-users', (u) => { allUsers = u; renderList(); });
+      socket.emit('get-user-data', (d) => { userData = d; if (d && d.theme) applyTheme(d.theme); renderList(); });
     }
 
-    function renderDmList() {
-      dmList.innerHTML = '';
-      const all = [{ id: 'general', name: 'Общий чат', isDm: false }, ...users.filter(u => u !== username).map(u => ({ id: u, name: u, isDm: true }))];
-      all.forEach(u => {
-        const div = document.createElement('div');
-        div.className = 'dm-item' + ((u.isDm && currentDm === u.id) || (!u.isDm && !currentDm) ? ' active' : '');
-        const isOnline = u.id === 'general' || users.includes(u.id);
-        div.innerHTML = `<div class="avatar" style="background:${getColor(u.name)}">${getAvatar(u.name)}</div><div class="info"><div class="name">${u.name}</div><div class="preview">${u.isDm ? 'Личные сообщения' : 'Общий чат'}</div></div>${u.isDm ? `<div class="dot" style="background:${isOnline ? '#34c759' : '#ccc'}"></div>` : ''}`;
-        div.addEventListener('click', () => {
-          if (u.isDm) { currentDm = u.id; currentRoom = 'dm:' + [username, u.id].sort().join(':'); socket.emit('join-dm', { with: u.id }); }
-          else { currentDm = null; currentRoom = 'general'; socket.emit('join', { username, room: 'general' }); }
-          chatName.textContent = u.name;
-          chatAvatar.textContent = getAvatar(u.name);
-          chatAvatar.style.background = getColor(u.name);
-          chatStatus.textContent = u.isDm ? (users.includes(u.id) ? 'в сети' : 'не в сети') : 'онлайн';
-          msgs.innerHTML = '';
-          renderDmList();
-        });
-        dmList.appendChild(div);
-      });
-    }
-
-    search.addEventListener('input', () => {
+    function renderList() {
       const q = search.value.toLowerCase();
-      document.querySelectorAll('.dm-item').forEach(el => {
-        el.style.display = el.textContent.toLowerCase().includes(q) ? '' : 'none';
-      });
-    });
+      list.innerHTML = '';
+      let items = [];
 
+      if (currentTab === 'all') {
+        items = [{ id:'general', name:'Общий чат', isDm:false, online:true }];
+        allUsers.filter(u => u !== username).forEach(u => items.push({ id:u, name:u, isDm:true, online:users.includes(u) }));
+      } else if (currentTab === 'friends') {
+        if (userData && userData.friends) userData.friends.forEach(u => items.push({ id:u, name:u, isDm:true, online:users.includes(u) }));
+      } else if (currentTab === 'pending') {
+        if (userData && userData.incoming) userData.incoming.forEach(u => items.push({ id:u, name:u, type:'incoming' }));
+        if (userData && userData.outgoing) userData.outgoing.forEach(u => items.push({ id:u, name:u, type:'outgoing' }));
+        if (items.length === 0) { const d = document.createElement('div'); d.style.cssText = 'padding:20px;text-align:center;color:var(--text2);font-size:13px'; d.textContent = 'Нет заявок'; list.appendChild(d); return; }
+      }
+
+      items.filter(i => i.name.toLowerCase().includes(q)).forEach(i => {
+        const div = document.createElement('div');
+        div.className = 'item' + ((i.isDm && currentDm === i.id) || (!i.isDm && !currentDm) ? ' active' : '');
+        const isOnline = !i.isDm || users.includes(i.id);
+        let actionsHtml = '';
+        if (i.type === 'incoming') actionsHtml = `<div class="actions"><button class="accept" title="Принять">✓</button><button class="decline" title="Отклонить">✕</button></div>`;
+        else if (i.type === 'outgoing') actionsHtml = `<div class="actions"><span style="font-size:11px;color:var(--text2)">...</span></div>`;
+        else if (i.isDm && i.online && !(userData && userData.friends && userData.friends.includes(i.id))) actionsHtml = `<div class="actions"><button class="add" title="Добавить в друзья">+</button></div>`;
+        div.innerHTML = `<div class="avatar" style="background:${getColor(i.name)}">${getAvatar(i.name)}</div><div class="info"><div class="name">${i.name}</div><div class="preview">${i.isDm ? 'Личные сообщения' : 'Общий чат'}</div></div>${i.isDm ? `<div class="dot" style="background:${isOnline ? '#34c759' : '#424242'}"></div>` : ''}${actionsHtml}`;
+
+        div.addEventListener('click', (e) => {
+          if (e.target.closest('.actions')) return;
+          if (i.isDm) { currentDm = i.id; currentRoom = 'dm:'+[username,i.id].sort().join(':'); socket.emit('join-dm', { with: i.id }); }
+          else { currentDm = null; currentRoom = 'general'; socket.emit('join', { username, room: 'general' }); }
+          chatName.textContent = i.name; chatAvatar.textContent = getAvatar(i.name); chatAvatar.style.background = getColor(i.name);
+          chatStatus.textContent = i.isDm ? (isOnline ? 'в сети' : 'не в сети') : 'онлайн';
+          msgs.innerHTML = '';
+          renderList();
+          if (i.isDm) addFriendBtn.style.display = 'inline-flex'; else addFriendBtn.style.display = 'none';
+        });
+        list.appendChild(div);
+
+        // Action buttons
+        if (i.type === 'incoming') {
+          div.querySelector('.accept').onclick = () => { socket.emit('friend-accept', { from: i.id }); };
+          div.querySelector('.decline').onclick = () => { socket.emit('friend-decline', { from: i.id }); };
+        } else if (i.isDm && i.online) {
+          const addBtn = div.querySelector('.add');
+          if (addBtn) addBtn.onclick = () => { socket.emit('friend-req', { to: i.id }, (r) => { if (!r.ok) alert(r.err || 'Ошибка'); }); };
+        }
+      });
+    }
+
+    search.addEventListener('input', renderList);
     sendBtn.addEventListener('click', sendMsg);
     input.addEventListener('keydown', e => { if (e.key === 'Enter') sendMsg(); });
     fileBtn.addEventListener('click', () => fileInput.click());
 
     fileInput.addEventListener('change', () => {
       const file = fileInput.files[0]; if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (currentDm) socket.emit('dm', { to: currentDm, text: '', file: e.target.result });
-        else socket.emit('msg', { text: '', file: e.target.result });
-      };
-      reader.readAsDataURL(file);
-      fileInput.value = '';
+      const r = new FileReader();
+      r.onload = (e) => { if (currentDm) socket.emit('dm', { to: currentDm, text: '', file: e.target.result }); else socket.emit('msg', { text: '', file: e.target.result }); };
+      r.readAsDataURL(file); fileInput.value = '';
     });
+
+    addFriendBtn.onclick = () => {
+      const n = prompt('Имя пользователя для добавления в друзья:');
+      if (n && n.trim()) socket.emit('friend-req', { to: n.trim() }, (r) => { if (!r.ok) alert(r.err || 'Ошибка'); });
+    };
 
     function sendMsg() {
       const text = input.value.trim();
@@ -256,43 +463,141 @@
     function addMsg(msg, isOwn) {
       const div = document.createElement('div');
       div.className = 'msg' + (msg.user === username ? ' own' : '');
-      const time = new Date(msg.time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      const time = new Date(msg.time).toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' });
       let fileHtml = '';
       if (msg.file) {
-        const isImg = msg.file.startsWith('data:image');
-        const isVid = msg.file.startsWith('data:video');
-        if (isImg) fileHtml = `<img src="${msg.file}" class="file" onclick="window.open(this.src)">`;
-        else if (isVid) fileHtml = `<video src="${msg.file}" class="file" controls></video>`;
+        if (msg.file.startsWith('data:image')) fileHtml = `<img src="${msg.file}" class="file" onclick="window.open(this.src)">`;
+        else if (msg.file.startsWith('data:video')) fileHtml = `<video src="${msg.file}" class="file" controls></video>`;
         else fileHtml = `<a href="${msg.file}" class="file-link" download>📎 Файл</a>`;
       }
       div.innerHTML = `<div class="bubble">${msg.text ? `<div class="text">${escapeHtml(msg.text)}</div>` : ''}${fileHtml}</div><div class="meta">${msg.user !== username ? msg.user + ' · ' : ''}${time}</div>`;
-      msgs.appendChild(div);
-      msgs.scrollTop = msgs.scrollHeight;
+      msgs.appendChild(div); msgs.scrollTop = msgs.scrollHeight;
     }
 
     socket.on('msg', (msg) => { if (!currentDm) addMsg(msg); });
-    socket.on('sys', (text) => { if (!currentDm) { const d = document.createElement('div'); d.className = 'sys'; d.textContent = text; msgs.appendChild(d); msgs.scrollTop = msgs.scrollHeight; } });
-    socket.on('history', (history) => { msgs.innerHTML = ''; if (history) history.forEach(m => addMsg(m)); });
-    socket.on('online', (list) => { users = list; onlineCount.textContent = list.length + ' онлайн'; renderDmList(); });
+    socket.on('sys', (t) => { if (!currentDm) { const d=document.createElement('div'); d.className='sys'; d.textContent=t; msgs.appendChild(d); msgs.scrollTop=msgs.scrollHeight; } });
+    socket.on('history', (h) => { msgs.innerHTML=''; if (h) h.forEach(m => addMsg(m)); });
+    socket.on('online', (list) => { users = list; renderList(); });
+    socket.on('friend-update', (d) => { userData = d; renderList(); });
 
     socket.on('dm', (data) => {
       if (currentDm === data.room.split(':').find(u => u !== username)) addMsg(data.msg);
-      else {
-        const parts = data.room.split(':');
-        const other = parts.find(u => u !== username);
-        if (other) {
-          const items = document.querySelectorAll('.dm-item');
-          for (const item of items) {
-            if (item.textContent.includes(other)) {
-              item.querySelector('.preview').textContent = data.msg.text || '📎 Файл';
-              break;
-            }
-          }
-        }
-      }
+      else { const other = data.room.split(':').find(u => u !== username); if (other) document.querySelectorAll('.item').forEach(el => { if (el.textContent.includes(other)) el.querySelector('.preview').textContent = data.msg.text || '📎 Файл'; }); }
     });
 
-    function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+    // Call system
+    let callState = 'idle';
+    let localStream = null;
+    let pc = null;
+    let peerUsername = null;
+    let callTimer = null;
+    let callSeconds = 0;
+    let pendingCandidates = [];
+    let micMuted = false;
+    let screenStream = null;
+
+    callBtn.onclick = async () => {
+      if (callState === 'idle') {
+        try { localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false }); }
+        catch(e) { alert('Нужен доступ к микрофону!'); return; }
+        callState = 'active';
+        document.getElementById('call-overlay').classList.add('show');
+        document.getElementById('call-name').textContent = 'Звонок в ' + chatName.textContent;
+        document.getElementById('call-status').textContent = 'Ожидание...';
+        socket.emit('call-start');
+        startCallTimer();
+      } else endCall();
+    };
+
+    function showIncomingCall(from) {
+      if (confirm(`📞 Звонок от ${from}. Присоединиться?`)) {
+        navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(s => {
+          localStream = s; peerUsername = from;
+          document.getElementById('call-overlay').classList.add('show');
+          document.getElementById('call-name').textContent = from;
+          document.getElementById('call-status').textContent = 'Соединение...';
+          socket.emit('call-join', { callerUsername: from });
+          initPC(true);
+          callState = 'joined';
+          startCallTimer();
+        }).catch(() => {});
+      }
+    }
+
+    document.getElementById('call-mic').onclick = function() {
+      micMuted = !micMuted;
+      this.classList.toggle('muted');
+      if (localStream) localStream.getAudioTracks().forEach(t => t.enabled = !micMuted);
+    };
+
+    document.getElementById('call-screen').onclick = function() {
+      if (screenStream) {
+        screenStream.getTracks().forEach(t => t.stop());
+        screenStream = null;
+        this.classList.remove('active');
+        socket.emit('screen-stop');
+        if (pc) pc.getSenders().forEach(s => { if (s.track && s.track.kind === 'video') pc.removeTrack(s); });
+        return;
+      }
+      navigator.mediaDevices.getDisplayMedia({ video: true }).then(s => {
+        screenStream = s;
+        this.classList.add('active');
+        socket.emit('screen-start');
+        s.getVideoTracks().forEach(t => pc?.addTrack(t, s));
+        s.getVideoTracks()[0].onended = () => { screenStream = null; document.getElementById('call-screen').classList.remove('active'); socket.emit('screen-stop'); };
+      }).catch(() => {});
+    };
+
+    document.getElementById('call-end').onclick = endCall;
+
+    socket.on('call-started', (d) => { if (d.username !== username && callState === 'idle') { peerUsername = d.username; showIncomingCall(d.username); } });
+    socket.on('call-ended', () => { if (callState !== 'idle') endCall(); });
+    socket.on('call-joined', (d) => { if (d.username !== username && callState === 'active' && d.callerUsername === username) { peerUsername = d.username; initPC(false); } });
+
+    socket.on('call-signal', async (d) => {
+      if (!pc) { if (d.signal.candidate) pendingCandidates.push(d.signal); return; }
+      try {
+        if (d.signal.type === 'offer') {
+          if (pc.signalingState !== 'stable') return;
+          await pc.setRemoteDescription(new RTCSessionDescription(d.signal));
+          const a = await pc.createAnswer(); await pc.setLocalDescription(a);
+          socket.emit('call-signal', { signal: a, toUser: d.fromUser });
+          while (pendingCandidates.length) await pc.addIceCandidate(new RTCIceCandidate(pendingCandidates.shift())).catch(()=>{});
+        } else if (d.signal.type === 'answer') {
+          if (pc.signalingState !== 'have-local-offer') return;
+          await pc.setRemoteDescription(new RTCSessionDescription(d.signal));
+          while (pendingCandidates.length) await pc.addIceCandidate(new RTCIceCandidate(pendingCandidates.shift())).catch(()=>{});
+        } else if (d.signal.candidate) {
+          if (pc.remoteDescription) await pc.addIceCandidate(new RTCIceCandidate(d.signal));
+          else pendingCandidates.push(d.signal);
+        }
+      } catch(e) {}
+    });
+
+    function initPC(isAnswerer) {
+      if (pc) { pc.close(); pc = null; }
+      pendingCandidates = [];
+      pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+      if (localStream) localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+      pc.onicecandidate = (e) => { if (e.candidate && peerUsername) socket.emit('call-signal', { signal: e.candidate, toUser: peerUsername }); };
+      pc.oniceconnectionstatechange = () => { if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') { if (callState !== 'idle') { endCall(); } } };
+      pc.ontrack = (e) => { const a = document.createElement('audio'); a.srcObject = e.streams[0]; a.autoplay = true; a.volume = 1; a.style.display = 'none'; document.body.appendChild(a); };
+      if (!isAnswerer) setTimeout(() => { if (pc) pc.createOffer().then(o => pc.setLocalDescription(o)).then(() => socket.emit('call-signal', { signal: pc.localDescription, toUser: peerUsername })).catch(()=>{}); }, 500);
+    }
+
+    function endCall() {
+      if (pc) { pc.close(); pc = null; }
+      if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+      if (screenStream) { screenStream.getTracks().forEach(t => t.stop()); screenStream = null; }
+      callState = 'idle'; peerUsername = null; pendingCandidates = [];
+      document.getElementById('call-overlay').classList.remove('show');
+      document.getElementById('call-screen').classList.remove('active');
+      stopCallTimer(); socket.emit('call-end');
+      document.querySelectorAll('audio').forEach(a => a.remove());
+    }
+
+    function startCallTimer() { callSeconds=0; callTimer=setInterval(() => { callSeconds++; const m=String(Math.floor(callSeconds/60)).padStart(2,'0'); const s=String(callSeconds%60).padStart(2,'0'); document.getElementById('call-status').textContent = `${m}:${s}`; }, 1000); }
+    function stopCallTimer() { clearInterval(callTimer); callTimer=null; }
   </script>
 </body>
 </html>

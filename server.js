@@ -25,14 +25,14 @@ io.on('connection', (socket) => {
     const { user, pass } = data;
     if (!user || !pass || user.length < 2) return cb({ ok: false, err: 'Неверные данные' });
     if (users[user]) return cb({ ok: false, err: 'Пользователь уже существует' });
-    users[user] = { pass, id: makeId() };
+    users[user] = { pass, id: makeId(), friends: [], incoming: [], outgoing: [], theme: 'dark' };
     cb({ ok: true });
   });
 
   socket.on('login', (data, cb) => {
     const { user, pass } = data;
     if (!users[user] || users[user].pass !== pass) return cb({ ok: false, err: 'Неверный логин или пароль' });
-    cb({ ok: true, userId: users[user].id });
+    cb({ ok: true, userId: users[user].id, data: users[user] });
   });
 
   socket.on('join', (data) => {
@@ -63,8 +63,7 @@ io.on('connection', (socket) => {
     if (!roomHistory[dmRoom]) roomHistory[dmRoom] = [];
     roomHistory[dmRoom].push(msg);
     if (roomHistory[dmRoom].length > 200) roomHistory[dmRoom].shift();
-    const sockets = [userSockets[username], userSockets[data.to]].filter(Boolean);
-    sockets.forEach(id => { if (id) io.to(id).emit('dm', { room: dmRoom, msg }); });
+    [userSockets[username], userSockets[data.to]].filter(Boolean).forEach(id => { if (id) io.to(id).emit('dm', { room: dmRoom, msg }); });
   });
 
   socket.on('join-dm', (data) => {
@@ -74,9 +73,60 @@ io.on('connection', (socket) => {
     socket.emit('history', roomHistory[dmRoom] || []);
   });
 
-  socket.on('get-users', () => {
-    socket.emit('online', [...onlineUsers]);
+  socket.on('friend-req', (data, cb) => {
+    if (!username || !users[data.to]) return cb?.({ ok: false });
+    if (users[username].friends.includes(data.to)) return cb?.({ ok: false, err: 'Уже в друзьях' });
+    if (users[data.to].incoming.includes(username)) return cb?.({ ok: false, err: 'Заявка уже отправлена' });
+    users[data.to].incoming.push(username);
+    users[username].outgoing.push(data.to);
+    const targetSocket = userSockets[data.to];
+    if (targetSocket) io.to(targetSocket).emit('friend-update', users[data.to]);
+    socket.emit('friend-update', users[username]);
+    cb?.({ ok: true });
   });
+
+  socket.on('friend-accept', (data, cb) => {
+    if (!username || !users[data.from]) return cb?.({ ok: false });
+    users[username].incoming = users[username].incoming.filter(u => u !== data.from);
+    users[data.from].outgoing = users[data.from].outgoing.filter(u => u !== username);
+    if (!users[username].friends.includes(data.from)) users[username].friends.push(data.from);
+    if (!users[data.from].friends.includes(username)) users[data.from].friends.push(username);
+    [userSockets[username], userSockets[data.from]].filter(Boolean).forEach(id => { if (id) io.to(id).emit('friend-update', users[id === userSockets[username] ? username : data.from]); });
+    cb?.({ ok: true });
+  });
+
+  socket.on('friend-decline', (data, cb) => {
+    if (!username || !users[data.from]) return cb?.({ ok: false });
+    users[username].incoming = users[username].incoming.filter(u => u !== data.from);
+    users[data.from].outgoing = users[data.from].outgoing.filter(u => u !== username);
+    socket.emit('friend-update', users[username]);
+    cb?.({ ok: true });
+  });
+
+  socket.on('friend-remove', (data, cb) => {
+    if (!username || !users[data.user]) return cb?.({ ok: false });
+    users[username].friends = users[username].friends.filter(u => u !== data.user);
+    users[data.user].friends = users[data.user].friends.filter(u => u !== username);
+    socket.emit('friend-update', users[username]);
+    const target = userSockets[data.user];
+    if (target) io.to(target).emit('friend-update', users[data.user]);
+    cb?.({ ok: true });
+  });
+
+  socket.on('get-user-data', (cb) => { if (username) cb(users[username]); });
+
+  socket.on('save-theme', (theme) => { if (username && users[username]) users[username].theme = theme; });
+
+  socket.on('get-all-users', (cb) => { cb(Object.keys(users)); });
+
+  // Call + screen share
+  socket.on('call-start', () => { io.to(room).emit('call-started', { username }); });
+  socket.on('call-end', () => { io.to(room).emit('call-ended', { username }); });
+  socket.on('call-join', (d) => { io.to(room).emit('call-joined', { username, callerUsername: d.callerUsername }); });
+  socket.on('call-signal', (d) => { const t = userSockets[d.toUser]; if (t) io.to(t).emit('call-signal', { signal: d.signal, fromUser: username }); });
+  socket.on('screen-signal', (d) => { const t = userSockets[d.toUser]; if (t) io.to(t).emit('screen-signal', { signal: d.signal, fromUser: username }); });
+  socket.on('screen-start', () => { io.to(room).emit('screen-started', { username }); });
+  socket.on('screen-stop', () => { io.to(room).emit('screen-stopped', { username }); });
 
   socket.on('disconnect', () => {
     onlineUsers.delete(username);
